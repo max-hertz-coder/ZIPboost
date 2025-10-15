@@ -1,0 +1,126 @@
+/* Global Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f4f4f4;
+    color: #333;
+  }
+  header {
+    background: #4C9AFF;
+    color: #fff;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header .logo {
+    height: 40px;
+    margin-right: 10px;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.5em;
+  }
+  header .user-info {
+    font-size: 0.9em;
+  }
+  header .user-info .logout-btn {
+    color: #fff;
+    text-decoration: underline;
+    margin-left: 10px;
+  }
+  main {
+    padding: 20px;
+  }
+  section {
+    margin-bottom: 40px;
+    background: #fff;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  }
+  h2 {
+    border-bottom: 2px solid #4C9AFF;
+    padding-bottom: 5px;
+  }
+  .drop-zone {
+    border: 2px dashed #4C9AFF;
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    margin-bottom: 10px;
+    background: #fafafa;
+    cursor: pointer;
+  }
+  .drop-zone.drag-over {
+    background: #e6f7ff;
+    border-color: #3399ff;
+    color: #000;
+  }
+  .file-list, .zip-content {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+  }
+  .file-list table, .zip-content table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .file-list table td, .zip-content table td {
+    border-bottom: 1px solid #ddd;
+    padding: 5px;
+  }
+  .file-list table td:nth-child(1),
+  .zip-content table td:nth-child(1) {
+    font-weight: bold;
+  }
+  .file-list table td:last-child,
+  .zip-content table td:last-child {
+    text-align: right;
+  }
+  .options {
+    margin: 10px 0;
+  }
+  .info-text {
+    font-size: 0.8em;
+    color: #555;
+    margin-left: 10px;
+  }
+  button {
+    padding: 5px 10px;
+    font-size: 1em;
+    cursor: pointer;
+  }
+  button:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+  .auth-container {
+    max-width: 300px;
+    margin: 100px auto;
+    text-align: center;
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  }
+  .auth-container .logo {
+    height: 50px;
+    margin: 10px;
+  }
+  .auth-form {
+    margin: 15px 0;
+  }
+  .auth-form input {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0 15px;
+    box-sizing: border-box;
+  }
+  .error-msg {
+    color: red;
+    font-weight: bold;
+  }
+  

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZBoost - File Compressor</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <img src="/logo.png" alt="ZBoost Logo" class="logo">
+    <h1>ZBoost File Compression</h1>
+    <div class="user-info">
+      <span id="user-email"></span> | Subscription until: <span id="sub-until"></span>
+      <a href="/logout" class="logout-btn">Log Out</a>
+    </div>
+  </header>
+  <main>
+    <!-- Compress Files Section -->
+    <section class="compress-section">
+      <h2>Compress Files</h2>
+      <div id="drop-zone" class="drop-zone">
+        <p>Drag & drop files here, or click to select files</p>
+        <input type="file" id="file-input" multiple hidden>
+      </div>
+      <div class="file-list">
+        <h3>Files to compress:</h3>
+        <table id="file-table">
+          <!-- File list will be populated here -->
+        </table>
+      </div>
+      <div class="options">
+        <label for="level-select">Compression level:</label>
+        <select id="level-select">
+          <option value="quick">Quick (fastest, larger file)</option>
+          <option value="optimal" selected>Optimal (balance speed/size)</option>
+          <option value="maximum">Maximum (slowest, smallest file)</option>
+        </select>
+        <span class="info-text">* Compression level affects speed and output file size.</span>
+      </div>
+      <button id="compress-btn">Compress to ZIP</button>
+    </section>
+    <hr>
+    <!-- Extract ZIP Section -->
+    <section class="extract-section">
+      <h2>View/Extract ZIP</h2>
+      <div id="zip-drop-zone" class="drop-zone">
+        <p>Drag & drop a .zip file here, or click to select a ZIP file</p>
+        <input type="file" id="zip-file-input" accept=".zip" hidden>
+      </div>
+      <div class="zip-content">
+        <h3>Contents of ZIP:</h3>
+        <table id="zip-table">
+          <!-- Zip content list will be populated here -->
+        </table>
+      </div>
+    </section>
+  </main>
+  <!-- Include JSZip library for zip compression/decompression -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZBoost - Login</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="auth-container">
+    <h1>ZBoost</h1>
+    <img src="/logo.png" alt="ZBoost Logo" class="logo">
+    <h2>Login</h2>
+    <form action="/login" method="POST" class="auth-form">
+      <label>Email:<br><input type="email" name="email" required></label><br>
+      <label>Password:<br><input type="password" name="password" required></label><br>
+      <button type="submit">Log In</button>
+    </form>
+    <p>Don't have an account? <a href="/register">Register here</a></p>
+    <p id="error-msg" class="error-msg"></p>
+  </div>
+  <script>
+    // Check for error query parameter and display a message if present
+    const params = new URLSearchParams(window.location.search);
+    const errorParam = params.get('error');
+    if (errorParam) {
+      const errorMsgElem = document.getElementById('error-msg');
+      if (errorParam === '1') {
+        errorMsgElem.textContent = 'Invalid email or password.';
+      } else if (errorParam === '2') {
+        errorMsgElem.textContent = 'Subscription inactive or expired.';
+      } else {
+        errorMsgElem.textContent = 'Unknown error. Please try again.';
+      }
+    }
+  </script>
+</body>
+</html>
