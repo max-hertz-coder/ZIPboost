@@ -5,7 +5,7 @@
   "description": "Drag & drop files to compress into ZIP and preview/extract ZIP contents (PDF, images, text, DOCX*) directly in Chrome.",
   "action": {
     "default_title": "Open ZIPboost",
-    "default_popup": "app.html"
+    "default_popup": "views/app.html"
   },
   "background": {
     "service_worker": "background.js"
