@@ -4,28 +4,30 @@
   <meta charset="UTF-8" />
   <title>ZIPboost</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/public/style.css">
-
+  <link rel="stylesheet" href="../style.css">
 </head>
 <body>
   <header class="topbar">
     <div class="logo">
-      <img src="icons/icon48.png" alt="ZB" class="logo-img" />
+      <img src="../icons/icon48.png" alt="ZB" class="logo-img" />
       <div class="title">ZIPboost</div>
     </div>
     <nav class="tabs">
       <button id="tab-compress" class="tab active">Compress</button>
       <button id="tab-view" class="tab">View</button>
+      <button id="tab-account" class="tab">Account</button>
     </nav>
   </header>
 
   <main class="container">
+
     <!-- COMPRESS -->
     <section id="sec-compress" class="card active">
       <h2>Compress files</h2>
+
       <div id="dz-compress" class="dropzone" tabindex="0">
         <div class="dz-title">Drag & drop files here</div>
-        <div class="dz-sub">…or click to select from disk / drag URLs from pages</div>
+        <div class="dz-sub">…or click to select from disk</div>
         <input id="inp-compress" type="file" multiple hidden />
       </div>
 
@@ -38,12 +40,12 @@
 
       <div class="row">
         <label class="label">Compression</label>
-        <select id="zip-preset">
+        <select id="zip-preset" title="Preset affects speed and resulting ZIP size">
           <option value="quick">Quick — fastest (bigger)</option>
           <option value="optimal" selected>Optimal — balanced</option>
           <option value="maximum">Maximum — smallest (slower)</option>
         </select>
-        <span class="hint">Affects speed and result size</span>
+        <span class="hint">Preset affects speed & result size</span>
       </div>
 
       <div class="actions">
@@ -65,16 +67,48 @@
 
       <div class="row">
         <button id="btn-extract-all" class="secondary">Extract all</button>
-        <span class="hint">Saved to Downloads/ZIPboost_extract/…</span>
+        <span class="hint">Files will be saved to Downloads/ZIPboost_extract/…</span>
       </div>
 
       <div id="zip-meta" class="meta"></div>
       <div id="list-zip" class="list"></div>
     </section>
+
+    <!-- ACCOUNT -->
+    <section id="sec-account" class="card">
+      <h2>Account</h2>
+
+      <div id="account-authed" style="display:none">
+        <div class="meta" id="user-info"></div>
+        <button id="btn-logout" class="secondary">Log out</button>
+      </div>
+
+      <div id="account-auth" class="auth-wrap">
+        <div class="auth-card small">
+          <h3 class="auth-title">Log in</h3>
+          <form id="form-login" class="auth-form">
+            <label>Email<br><input id="login-email" type="email" required></label>
+            <label>Password<br><input id="login-pass" type="password" required></label>
+            <button type="submit" class="primary" style="width:100%">Log In</button>
+          </form>
+        </div>
+
+        <div class="auth-card small">
+          <h3 class="auth-title">Register</h3>
+          <form id="form-register" class="auth-form">
+            <label>Email<br><input id="reg-email" type="email" required></label>
+            <label>Password<br><input id="reg-pass" type="password" required></label>
+            <button type="submit" class="secondary" style="width:100%">Create account</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="acc-msg" class="meta"></div>
+    </section>
   </main>
 
-  <!-- Local libs: MV3 требует локальные файлы -->
-  <script src="libs/jszip.min.js"></script>
-  <script type="module" src="app.js"></script>
+  <!-- Локальная библиотека: Положи реальный jszip.min.js в /libs -->
+  <script src="../libs/jszip.min.js"></script>
+  <script src="../app.js" type="module"></script>
 </body>
 </html>

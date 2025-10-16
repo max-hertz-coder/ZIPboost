@@ -36,8 +36,11 @@ const hashEmail = (email) =>
 app.get('/', (req, res) => res.redirect('/login'));
 
 // Страницы
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
-app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'register.html')));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
+app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'views', 'register.html')));
+app.get('/app', (req, res) => res.sendFile(path.join(__dirname, 'views', 'app.html')));
 
 // Регистрация
 app.post('/register', async (req, res) => {

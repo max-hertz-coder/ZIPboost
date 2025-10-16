@@ -1,36 +1,16 @@
-self.addEventListener("install", () => console.log("[ZIPboost] SW installed"));
-self.addEventListener("activate", () => console.log("[ZIPboost] SW activated"));
-
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  (async () => {
-    try {
-      if (msg?.type === "FETCH_FILE") {
-        const resp = await fetch(msg.url);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const blob = await resp.blob();
-        const ab = await blob.arrayBuffer();
-        sendResponse({
-          ok: true,
-          mime: blob.type || "application/octet-stream",
-          name: guessName(msg.url),
-          buffer: Array.from(new Uint8Array(ab))
-        });
-        return;
-      }
-      sendResponse({ ok: false, error: "Unknown message" });
-    } catch (err) {
-      console.error("[ZIPboost] BG error:", err);
-      sendResponse({ ok: false, error: String(err) });
-    }
-  })();
-  return true;
+// MV3 service worker (минимальный). Нужен для стабильного вызова chrome.downloads из попапа.
+chrome.runtime.onInstalled.addListener(() => {
+  // ничего не делаем — но файл обязателен, т.к. указан в манифесте
 });
 
-function guessName(url) {
-  try {
-    const u = new URL(url);
-    return (u.pathname.split("/").pop() || "file").split("?")[0];
-  } catch {
-    return "file";
+// Прокси для скачиваний: из pop-up посылаем message, тут запускаем chrome.downloads.download
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.type === 'download') {
+    const { url, filename } = msg.payload || {};
+    chrome.downloads.download(
+      { url, filename, conflictAction: 'uniquify', saveAs: false },
+      (id) => sendResponse({ ok: !!id, id, lastError: chrome.runtime.lastError?.message })
+    );
+    return true; // async response
   }
-}
+});
