@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>ZIPboost</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- ВАЖНО: стили лежат в public/ -->
+  <!-- Подключаем стили (находятся в папке public) -->
   <link rel="stylesheet" href="../public/style.css">
 </head>
 <body>
@@ -21,24 +21,19 @@
   </header>
 
   <main class="container">
-
-    <!-- COMPRESS -->
+    <!-- COMPRESS SECTION -->
     <section id="sec-compress" class="card active">
       <h2>Compress files</h2>
-
       <div id="dz-compress" class="dropzone" tabindex="0">
         <div class="dz-title">Drag & drop files here</div>
         <div class="dz-sub">…or click to select from disk</div>
         <input id="inp-compress" type="file" multiple hidden />
       </div>
-
       <div id="list-compress" class="list"></div>
-
       <div class="row">
         <label class="label">ZIP name</label>
         <input id="zip-name" type="text" value="archive.zip" />
       </div>
-
       <div class="row">
         <label class="label">Compression</label>
         <select id="zip-preset" title="Preset affects speed and resulting ZIP size">
@@ -46,9 +41,8 @@
           <option value="optimal" selected>Optimal — balanced</option>
           <option value="maximum">Maximum — smallest (slower)</option>
         </select>
-        <span class="hint">Preset affects speed & result size</span>
+        <span class="hint">Preset affects speed &amp; result size</span>
       </div>
-
       <div class="actions">
         <button id="btn-compress" class="primary">Compress to ZIP</button>
         <div id="progress" class="progress"></div>
@@ -56,34 +50,29 @@
       </div>
     </section>
 
-    <!-- VIEW -->
+    <!-- VIEW SECTION -->
     <section id="sec-view" class="card">
       <h2>View / Extract ZIP</h2>
-
       <div id="dz-view" class="dropzone" tabindex="0">
         <div class="dz-title">Drop a .zip file here</div>
         <div class="dz-sub">…or click to choose</div>
         <input id="inp-zip" type="file" accept=".zip,application/zip" hidden />
       </div>
-
       <div class="row">
         <button id="btn-extract-all" class="secondary">Extract all</button>
         <span class="hint">Files will be saved to Downloads/ZIPboost_extract/…</span>
       </div>
-
       <div id="zip-meta" class="meta"></div>
       <div id="list-zip" class="list"></div>
     </section>
 
-    <!-- ACCOUNT -->
+    <!-- ACCOUNT SECTION -->
     <section id="sec-account" class="card">
       <h2>Account</h2>
-
       <div id="account-authed" style="display:none">
         <div class="meta" id="user-info"></div>
         <button id="btn-logout" class="secondary">Log out</button>
       </div>
-
       <div id="account-auth" class="auth-wrap">
         <div class="auth-card small">
           <h3 class="auth-title">Log in</h3>
@@ -93,7 +82,6 @@
             <button type="submit" class="primary" style="width:100%">Log In</button>
           </form>
         </div>
-
         <div class="auth-card small">
           <h3 class="auth-title">Register</h3>
           <form id="form-register" class="auth-form">
@@ -103,12 +91,11 @@
           </form>
         </div>
       </div>
-
       <div id="acc-msg" class="meta"></div>
     </section>
   </main>
 
-  <!-- ВАЖНО: локальная библиотека JSZip -->
+  <!-- Подключаем библиотеки и скрипты -->
   <script src="../libs/jszip.min.js"></script>
   <script src="../app.js" type="module"></script>
 </body>
