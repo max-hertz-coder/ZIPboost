@@ -1,38 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZBoost - Login</title>
-  <link rel="stylesheet" href="/style.css">
-</head>
-<body>
-  <div class="auth-container">
-    <h1>ZBoost</h1>
-    <img src="/logo.png" alt="ZBoost Logo" class="logo">
-    <h2>Login</h2>
-    <form action="/login" method="POST" class="auth-form">
-      <label>Email:<br><input type="email" name="email" required></label><br>
-      <label>Password:<br><input type="password" name="password" required></label><br>
-      <button type="submit">Log In</button>
-    </form>
-    <p>Don't have an account? <a href="/register">Register here</a></p>
-    <p id="error-msg" class="error-msg"></p>
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZBoost - Login</title>
+<link rel="stylesheet" href="/styles.css">
+</head><body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <img src="/icons/icon128.png" class="auth-logo" alt="ZBoost">
+      <h1 class="auth-title">Log in</h1>
+      <form method="POST" action="/login" class="auth-form">
+        <label>Email<br><input type="email" name="email" required></label>
+        <label>Password<br><input type="password" name="password" required></label>
+        <button type="submit" class="primary" style="width:100%">Log In</button>
+      </form>
+      <div class="auth-sub">No account? <a href="/register">Register</a></div>
+      <div id="err" class="error-msg"></div>
+    </div>
   </div>
-  <script>
-    // Check for error query parameter and display a message if present
-    const params = new URLSearchParams(window.location.search);
-    const errorParam = params.get('error');
-    if (errorParam) {
-      const errorMsgElem = document.getElementById('error-msg');
-      if (errorParam === '1') {
-        errorMsgElem.textContent = 'Invalid email or password.';
-      } else if (errorParam === '2') {
-        errorMsgElem.textContent = 'Subscription inactive or expired.';
-      } else {
-        errorMsgElem.textContent = 'Unknown error. Please try again.';
-      }
-    }
-  </script>
-</body>
-</html>
+<script>
+const p=new URLSearchParams(location.search).get('error');
+if(p){ document.getElementById('err').textContent = (p==='2'?'Subscription inactive or expired.':'Invalid email or password.'); }
+</script>
+</body></html>

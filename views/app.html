@@ -2,62 +2,78 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZBoost - File Compressor</title>
-  <link rel="stylesheet" href="/style.css">
+  <title>ZIPboost</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header>
-    <img src="/logo.png" alt="ZBoost Logo" class="logo">
-    <h1>ZBoost File Compression</h1>
-    <div class="user-info">
-      <span id="user-email"></span> | Subscription until: <span id="sub-until"></span>
-      <a href="/logout" class="logout-btn">Log Out</a>
+  <header class="topbar">
+    <div class="logo">
+      <img src="icons/icon48.png" alt="ZB" class="logo-img" />
+      <div class="title">ZIPboost</div>
     </div>
+    <nav class="tabs">
+      <button id="tab-compress" class="tab active">Compress</button>
+      <button id="tab-view" class="tab">View</button>
+    </nav>
   </header>
-  <main>
-    <!-- Compress Files Section -->
-    <section class="compress-section">
-      <h2>Compress Files</h2>
-      <div id="drop-zone" class="drop-zone">
-        <p>Drag & drop files here, or click to select files</p>
-        <input type="file" id="file-input" multiple hidden>
+
+  <main class="container">
+    <!-- COMPRESS -->
+    <section id="sec-compress" class="card active">
+      <h2>Compress files</h2>
+      <div id="dz-compress" class="dropzone" tabindex="0">
+        <div class="dz-title">Drag & drop files here</div>
+        <div class="dz-sub">…or click to select from disk / drag URLs from pages</div>
+        <input id="inp-compress" type="file" multiple hidden />
       </div>
-      <div class="file-list">
-        <h3>Files to compress:</h3>
-        <table id="file-table">
-          <!-- File list will be populated here -->
-        </table>
+
+      <div id="list-compress" class="list"></div>
+
+      <div class="row">
+        <label class="label">ZIP name</label>
+        <input id="zip-name" type="text" value="archive.zip" />
       </div>
-      <div class="options">
-        <label for="level-select">Compression level:</label>
-        <select id="level-select">
-          <option value="quick">Quick (fastest, larger file)</option>
-          <option value="optimal" selected>Optimal (balance speed/size)</option>
-          <option value="maximum">Maximum (slowest, smallest file)</option>
+
+      <div class="row">
+        <label class="label">Compression</label>
+        <select id="zip-preset">
+          <option value="quick">Quick — fastest (bigger)</option>
+          <option value="optimal" selected>Optimal — balanced</option>
+          <option value="maximum">Maximum — smallest (slower)</option>
         </select>
-        <span class="info-text">* Compression level affects speed and output file size.</span>
+        <span class="hint">Affects speed and result size</span>
       </div>
-      <button id="compress-btn">Compress to ZIP</button>
+
+      <div class="actions">
+        <button id="btn-compress" class="primary">Compress to ZIP</button>
+        <div id="progress" class="progress"></div>
+        <div id="lib-status" class="meta"></div>
+      </div>
     </section>
-    <hr>
-    <!-- Extract ZIP Section -->
-    <section class="extract-section">
-      <h2>View/Extract ZIP</h2>
-      <div id="zip-drop-zone" class="drop-zone">
-        <p>Drag & drop a .zip file here, or click to select a ZIP file</p>
-        <input type="file" id="zip-file-input" accept=".zip" hidden>
+
+    <!-- VIEW -->
+    <section id="sec-view" class="card">
+      <h2>View / Extract ZIP</h2>
+
+      <div id="dz-view" class="dropzone" tabindex="0">
+        <div class="dz-title">Drop a .zip file here</div>
+        <div class="dz-sub">…or click to choose</div>
+        <input id="inp-zip" type="file" accept=".zip,application/zip" hidden />
       </div>
-      <div class="zip-content">
-        <h3>Contents of ZIP:</h3>
-        <table id="zip-table">
-          <!-- Zip content list will be populated here -->
-        </table>
+
+      <div class="row">
+        <button id="btn-extract-all" class="secondary">Extract all</button>
+        <span class="hint">Saved to Downloads/ZIPboost_extract/…</span>
       </div>
+
+      <div id="zip-meta" class="meta"></div>
+      <div id="list-zip" class="list"></div>
     </section>
   </main>
-  <!-- Include JSZip library for zip compression/decompression -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="/main.js"></script>
+
+  <!-- Local libs: MV3 требует локальные файлы -->
+  <script src="libs/jszip.min.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

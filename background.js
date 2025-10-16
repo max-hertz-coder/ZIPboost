@@ -1,9 +1,6 @@
-self.addEventListener('install', () => {
-  console.log('[ZIPboost] service worker installed');
-});
-self.addEventListener('activate', () => {
-  console.log('[ZIPboost] service worker activated');
-});
+// MV3 service worker + helper для загрузки файлов по URL (DnD ссылок)
+self.addEventListener('install', () => console.log('[ZIPboost] SW installed'));
+self.addEventListener('activate', () => console.log('[ZIPboost] SW activated'));
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
@@ -15,14 +12,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const ab = await blob.arrayBuffer();
         sendResponse({
           ok: true,
-          mime: blob.type || "",
+          mime: blob.type || "application/octet-stream",
           name: guessName(message.url),
           buffer: Array.from(new Uint8Array(ab))
         });
-        return;
-      }
-      if (message?.type === "CHECK_SUBSCRIPTION") {
-        sendResponse({ ok: true, subscribed: true }); // заглушка
         return;
       }
       sendResponse({ ok: false, error: "Unknown message" });
@@ -31,7 +24,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ ok: false, error: String(e) });
     }
   })();
-  return true; // async response
+  return true; // async
 });
 
 function guessName(url) {
