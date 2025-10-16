@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ZIPboost — Zip Archiver & Viewer",
-  "version": "2.3.0",
-  "description": "Drag & drop files to compress into ZIP and preview/extract ZIP contents (PDF, images, text, DOCX*) directly in Chrome. Auth is local in the extension.",
+  "version": "2.3.1",
+  "description": "Drag & drop to compress, view, and extract ZIP files directly in Chrome. Local signup & login in the popup.",
   "action": {
     "default_title": "Open ZIPboost",
     "default_popup": "views/app.html"
@@ -10,11 +10,7 @@
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": [
-    "downloads",
-    "storage",
-    "unlimitedStorage"
-  ],
+  "permissions": ["downloads", "storage", "unlimitedStorage"],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -22,9 +18,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": [
-        "icons/*"
-      ],
+      "resources": ["icons/*"],
       "matches": ["<all_urls>"]
     }
   ]

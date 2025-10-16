@@ -18,8 +18,8 @@ html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-u
 .card.active{display:block}
 h2{margin:0 0 10px 0;font-size:15px}
 
-.dropzone{border:1.5px dashed #334155;border-radius:12px;padding:22px;text-align:center;background:#0f172a;cursor:pointer}
-.dropzone.drag{background:#0d1a31;border-color:#3b82f6}
+.dropzone{border:1.5px dashed #334155;border-radius:12px;padding:22px;text-align:center;background:#0f172a;cursor:pointer;transition:.15s}
+.dropzone.drag{background:#0d1a31;border-color:#3b82f6;transform:scale(1.01)}
 .dz-title{font-weight:600}
 .dz-sub{color:var(--muted);font-size:12px;margin-top:4px}
 
@@ -39,7 +39,7 @@ input[type="text"],select{flex:1;min-width:180px;background:#0b1220;border:1px s
 .secondary{background:#0f2038;border:1px solid #2c3a52;color:#d3e1ff;border-radius:10px;padding:8px 12px;cursor:pointer}
 .progress{color:#cbd5e1;min-height:18px}
 
-/* Auth (вкладка Account) */
+/* Account */
 .auth-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .auth-card{background:#0f1621;border:1px solid var(--border);border-radius:12px;padding:12px}
 .auth-card.small{max-width:360px}
