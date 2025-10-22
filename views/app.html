@@ -10,8 +10,8 @@
 <body>
   <header class="topbar">
     <nav class="tabs">
-      <button id="tab-compress" class="tab active">Compress</button>
-      <button id="tab-view" class="tab">View</button>
+      <button type="button" id="tab-compress" class="tab active">Compress</button>
+      <button type="button" id="tab-view" class="tab">View</button>
     </nav>
   </header>
 
@@ -39,7 +39,7 @@
         <div class="hint">Compression level affects speed &amp; result size</div>
       </div>
       <div class="actions">
-        <button id="btn-compress" class="primary">Compress to ZIP</button>
+        <button type="button" id="btn-compress" class="primary">Compress to ZIP</button>
         <div id="progress" class="progress"></div>
         <div id="lib-status" class="meta"></div>
       </div>
@@ -54,9 +54,9 @@
         <input id="inp-zip" type="file" accept=".zip,.rar,.7z,.tar" hidden />
       </div>
       <div class="row">
-        <button id="btn-extract-all" class="secondary">Extract all</button>
-        <button id="btn-reopen-zip" class="primary" style="display:none">Reopen ZIP</button>
-        <button id="btn-clear-state" class="secondary">Clear</button>
+        <button type="button" id="btn-extract-all" class="secondary">Extract all</button>
+        <button type="button" id="btn-reopen-zip" class="primary" style="display:none">Reopen ZIP</button>
+        <button type="button" id="btn-clear-state" class="secondary">Clear</button>
       </div>
       <div id="zip-meta" class="meta"></div>
       <div id="list-zip" class="list"></div>

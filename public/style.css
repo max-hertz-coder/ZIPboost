@@ -7,9 +7,7 @@
   --primary: #4f46e5;
   --primary-2: #3b82f6;
 }
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 html, body {
   margin: 0;
   background: var(--bg);
@@ -61,20 +59,16 @@ html, body {
   border: 1px solid var(--border);
   border-radius: 8px;
 }
-.card.active {
-  display: flex;
-}
+.card.active { display: flex; }
 .row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 12px;
   margin: 8px 0;
 }
 
-.field-group {
-  margin: 12px 0;
-}
+.field-group { margin: 12px 0; }
 .field-group select {
   width: 100%;
   margin-bottom: 4px;
@@ -86,9 +80,7 @@ html, body {
   color: var(--text);
   margin-bottom: 6px;
 }
-.label {
-  flex: 0 0 80px;
-}
+.label { flex: 0 0 80px; }
 input[type=text], select {
   flex: 1;
   padding: 6px 8px;
@@ -97,9 +89,7 @@ input[type=text], select {
   border-radius: 4px;
   color: #fff;
 }
-select {
-  cursor: pointer;
-}
+select { cursor: pointer; }
 .hint {
   font-size: 12px;
   color: var(--muted);
@@ -155,9 +145,7 @@ select {
   padding: 4px 8px;
   border-bottom: 1px solid var(--border);
 }
-.item:last-child {
-  border: none;
-}
+.item:last-child { border: none; }
 .name {
   flex: 1;
   overflow: hidden;
@@ -178,8 +166,8 @@ select {
   background: #374151;
   border: none;
   color: #fff;
-  font-size: 12px;
-  padding: 2px 6px;
+  font-size: 14px;
+  padding: 4px 8px;
   cursor: pointer;
   border-radius: 3px;
 }
@@ -195,14 +183,12 @@ select {
 /* Buttons */
 button.primary, button.secondary {
   cursor: pointer;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border: none;
   color: #fff;
   border-radius: 4px;
 }
-button.primary {
-  background: var(--primary);
-}
+button.primary { background: var(--primary); }
 button.secondary {
   background: var(--panel);
   border: 1px solid var(--border);
