@@ -75,12 +75,10 @@ html, body {
 .field-group {
   margin: 12px 0;
 }
-
 .field-group select {
   width: 100%;
   margin-bottom: 4px;
 }
-
 .field-label {
   display: block;
   font-size: 14px;
@@ -91,7 +89,7 @@ html, body {
 .label {
   flex: 0 0 80px;
 }
-input[type=text], input[type=email], input[type=password], select {
+input[type=text], select {
   flex: 1;
   padding: 6px 8px;
   background: #0f172a;
@@ -106,7 +104,6 @@ select {
   font-size: 12px;
   color: var(--muted);
   margin-top: 4px;
-  display: block;
 }
 .meta {
   font-size: 12px;
@@ -195,61 +192,21 @@ select {
   margin-left: 8px;
 }
 
-/* Auth (Account section) */
-.auth-wrap {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.auth-card {
-  background: #0f172a;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px;
-}
-.auth-title {
-  font-size: 15px;
-  margin: 0 0 8px;
-}
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.auth-form label {
-  font-size: 13px;
-}
-.auth-form input {
-  width: 100%;
-}
-.auth-link {
-  display: inline-block;
-  margin-top: 12px;
-  font-size: 13px;
-  color: var(--primary-2);
-  text-decoration: none;
-}
-.auth-link:hover {
-  text-decoration: underline;
-}
-
 /* Buttons */
 button.primary, button.secondary {
   cursor: pointer;
-  border: none;
-  font: inherit;
   padding: 6px 12px;
+  border: none;
+  color: #fff;
   border-radius: 4px;
 }
 button.primary {
   background: var(--primary);
-  color: #fff;
-}
-button.primary:disabled {
-  opacity: 0.5;
-  cursor: default;
 }
 button.secondary {
-  background: #374151;
-  color: #fff;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+button.primary:hover, button.secondary:hover {
+  opacity: 0.9;
 }

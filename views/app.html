@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>ZIPboost</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Подключаем стили (находятся в папке public) -->
+  <!-- Подключаем стили -->
   <link rel="stylesheet" href="../public/style.css">
 </head>
 <body>
@@ -20,8 +20,8 @@
     <section id="sec-compress" class="card active">
       <h2>Compress files</h2>
       <div id="dz-compress" class="dropzone" tabindex="0">
-        <div class="dz-title">Click to select files</div>
-        <div class="dz-sub">Choose files from your computer</div>
+        <div class="dz-title">Drop files here or click to select</div>
+        <div class="dz-sub">Choose files from your computer or drag links/images</div>
         <input id="inp-compress" type="file" multiple hidden />
       </div>
       <div id="list-compress" class="list"></div>
@@ -49,9 +49,9 @@
     <section id="sec-view" class="card">
       <h2>View / Extract ZIP</h2>
       <div id="dz-view" class="dropzone" tabindex="0">
-        <div class="dz-title">Click to select ZIP file</div>
-        <div class="dz-sub">Choose ZIP file from your computer</div>
-        <input id="inp-zip" type="file" accept=".zip,application/zip" hidden />
+        <div class="dz-title">Drop ZIP/RAR/7Z/TAR here or click to select</div>
+        <div class="dz-sub">Choose archive file from your computer</div>
+        <input id="inp-zip" type="file" accept=".zip,.rar,.7z,.tar" hidden />
       </div>
       <div class="row">
         <button id="btn-extract-all" class="secondary">Extract all</button>
@@ -61,7 +61,6 @@
       <div id="zip-meta" class="meta"></div>
       <div id="list-zip" class="list"></div>
     </section>
-
   </main>
 
   <!-- Подключаем библиотеки и скрипты -->

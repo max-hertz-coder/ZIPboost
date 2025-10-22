@@ -3,10 +3,10 @@ const path = require('path');
 
 const app = express();
 
-// Раздаём статику (включая styles.css, иконки и т.п.)
+// Раздаём статические файлы (включая style.css и скрипты)
 app.use(express.static(__dirname));
 
-// Корень → главная страница приложения
+// Главная страница приложения
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'app.html')));
 
 const PORT = process.env.PORT || 3000;
