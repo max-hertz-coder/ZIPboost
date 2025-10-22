@@ -23,24 +23,10 @@ html, body {
   top: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
   background: #0d1420;
-}
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.logo-img {
-  width: 32px;
-  height: 32px;
-}
-.title {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
 }
 .tabs {
   display: flex;
@@ -81,7 +67,26 @@ html, body {
 .row {
   display: flex;
   align-items: center;
-  margin: 4px 0;
+  justify-content: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.field-group {
+  margin: 12px 0;
+}
+
+.field-group select {
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.field-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
 }
 .label {
   flex: 0 0 80px;
@@ -100,7 +105,8 @@ select {
 .hint {
   font-size: 12px;
   color: var(--muted);
-  margin-left: 8px;
+  margin-top: 4px;
+  display: block;
 }
 .meta {
   font-size: 12px;
@@ -182,6 +188,11 @@ select {
 }
 .item button.xs:hover {
   background: #475569;
+}
+.file-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
 }
 
 /* Auth (Account section) */
