@@ -1,0 +1,27 @@
+/* Theme 3: Темная + Фиолетовый (современно) */
+:root {
+  --bg: #120f14;
+  --panel: #18111a;
+  --border: #2d1f35;
+  --text: #f0e5f5;
+  --muted: #b8a0c8;
+  --primary: #8b5cf6;
+  --primary-2: #a78bfa;
+  --topbar-bg: #150d1a;
+  --tab-bg: #16101c;
+  --tab-color: #ddd6fe;
+  --tab-active-bg: #1d1433;
+  --tab-active-color: #fff;
+  --tab-active-border: #4c334d;
+  --input-bg: #0f0a18;
+  --progress-color: #10b981;
+  --dropzone-bg: #0f0a18;
+  --dropzone-drag-bg: #0e0b1f;
+  --dropzone-focus-border: #a78bfa;
+  --dropzone-drag-border: #a78bfa;
+  --item-hover-bg: #1f1a2a;
+  --item-active-bg: #2d263a;
+  --button-xs-bg: #3d2a4a;
+  --button-xs-hover-bg: #4a355a;
+  --button-text: #fff;
+}

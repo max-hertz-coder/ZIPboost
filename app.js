@@ -103,6 +103,8 @@ function ensureButton(button) {
 // ============================================================================
 const tabC = $("#tab-compress");
 const tabV = $("#tab-view");
+const btnTheme = $("#btn-theme-toggle");
+const themeIcon = btnTheme?.querySelector(".theme-icon");
 
 const secC = $("#sec-compress");
 const secV = $("#sec-view");
@@ -153,6 +155,63 @@ async function activate(section, tabBtn) {
 
 on(tabC, "click", () => activate(secC, tabC));
 on(tabV, "click", () => activate(secV, tabV));
+
+// ============================================================================
+//                               THEME TOGGLE
+// ============================================================================
+const THEMES = {
+  dark: { file: "dark-blue.css", icon: "🌙" },
+  light: { file: "light-blue.css", icon: "☀️" }
+};
+
+let currentTheme = "dark"; // default
+
+function getThemeLink() {
+  return document.querySelector('#theme-link') || document.querySelector('link[href*="/themes/"]');
+}
+
+async function initTheme() {
+  const saved = (await storageGet(["zipboost_theme"])).zipboost_theme;
+  if (saved && (saved === "dark" || saved === "light")) {
+    currentTheme = saved;
+  }
+  applyTheme(currentTheme, false);
+}
+
+function applyTheme(theme, save = true) {
+  currentTheme = theme;
+  const link = getThemeLink();
+  if (link) {
+    link.href = `../public/themes/${THEMES[theme].file}`;
+  } else {
+    // создаем ссылку если её нет
+    const newLink = document.createElement("link");
+    newLink.rel = "stylesheet";
+    newLink.href = `../public/themes/${THEMES[theme].file}`;
+    document.head.appendChild(newLink);
+  }
+  
+  if (themeIcon) {
+    themeIcon.textContent = THEMES[theme].icon;
+  }
+  
+  if (save) {
+    storageSet({ zipboost_theme: theme });
+  }
+}
+
+function toggleTheme() {
+  const next = currentTheme === "dark" ? "light" : "dark";
+  applyTheme(next);
+}
+
+if (btnTheme) {
+  ensureButton(btnTheme);
+  on(btnTheme, "click", toggleTheme);
+}
+
+// Инициализация темы при загрузке
+initTheme();
 
 // Восстановление «умолчаний» (имя архива/пресет)
 (async () => {

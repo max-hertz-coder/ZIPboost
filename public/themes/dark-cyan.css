@@ -1,0 +1,27 @@
+/* Theme 5: Темная + Бирюзовый/Голубой (свежесть) */
+:root {
+  --bg: #0f1414;
+  --panel: #111a1a;
+  --border: #1f2d2d;
+  --text: #e5f0f0;
+  --muted: #9fb8b8;
+  --primary: #06b6d4;
+  --primary-2: #22d3ee;
+  --topbar-bg: #0d1a1a;
+  --tab-bg: #101c1c;
+  --tab-color: #a5f3fc;
+  --tab-active-bg: #142d33;
+  --tab-active-color: #fff;
+  --tab-active-border: #334d4d;
+  --input-bg: #0f1a1a;
+  --progress-color: #10b981;
+  --dropzone-bg: #0f1a1a;
+  --dropzone-drag-bg: #0e1f1f;
+  --dropzone-focus-border: #22d3ee;
+  --dropzone-drag-border: #22d3ee;
+  --item-hover-bg: #1a2a2a;
+  --item-active-bg: #263a3a;
+  --button-xs-bg: #374d4d;
+  --button-xs-hover-bg: #475a5a;
+  --button-text: #fff;
+}

@@ -1,0 +1,27 @@
+/* Theme 7: Светлая + Зеленый (эко-тема) */
+:root {
+  --bg: #f8faf8;
+  --panel: #ffffff;
+  --border: #e2ede5;
+  --text: #1e2b1e;
+  --muted: #64786b;
+  --primary: #10b981;
+  --primary-2: #34d399;
+  --topbar-bg: #f1f5f1;
+  --tab-bg: #e2ede5;
+  --tab-color: #059669;
+  --tab-active-bg: #ffffff;
+  --tab-active-color: #1e2b1e;
+  --tab-active-border: #10b981;
+  --input-bg: #ffffff;
+  --progress-color: #10b981;
+  --dropzone-bg: #f8faf8;
+  --dropzone-drag-bg: #d1fae5;
+  --dropzone-focus-border: #10b981;
+  --dropzone-drag-border: #10b981;
+  --item-hover-bg: #f1f5f1;
+  --item-active-bg: #e2ede5;
+  --button-xs-bg: #cbd5cb;
+  --button-xs-hover-bg: #94a394;
+  --button-text: #ffffff;
+}

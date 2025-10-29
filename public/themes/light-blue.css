@@ -1,0 +1,27 @@
+/* Theme 6: Светлая + Синий (классика) */
+:root {
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --muted: #64748b;
+  --primary: #3b82f6;
+  --primary-2: #60a5fa;
+  --topbar-bg: #f1f5f9;
+  --tab-bg: #e2e8f0;
+  --tab-color: #3b82f6;
+  --tab-active-bg: #ffffff;
+  --tab-active-color: #1e293b;
+  --tab-active-border: #3b82f6;
+  --input-bg: #ffffff;
+  --progress-color: #10b981;
+  --dropzone-bg: #f8fafc;
+  --dropzone-drag-bg: #e0f2fe;
+  --dropzone-focus-border: #3b82f6;
+  --dropzone-drag-border: #3b82f6;
+  --item-hover-bg: #f1f5f9;
+  --item-active-bg: #e2e8f0;
+  --button-xs-bg: #cbd5e1;
+  --button-xs-hover-bg: #94a3b8;
+  --button-text: #ffffff;
+}

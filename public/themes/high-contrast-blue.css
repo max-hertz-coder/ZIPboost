@@ -1,0 +1,27 @@
+/* Theme 8: Высокий контраст + Синий (доступность) */
+:root {
+  --bg: #000000;
+  --panel: #1a1a1a;
+  --border: #404040;
+  --text: #ffffff;
+  --muted: #b3b3b3;
+  --primary: #0066ff;
+  --primary-2: #3399ff;
+  --topbar-bg: #0d0d0d;
+  --tab-bg: #1a1a1a;
+  --tab-color: #99ccff;
+  --tab-active-bg: #262626;
+  --tab-active-color: #ffffff;
+  --tab-active-border: #4d4d4d;
+  --input-bg: #1a1a1a;
+  --progress-color: #00ff00;
+  --dropzone-bg: #0d0d0d;
+  --dropzone-drag-bg: #1a1a1a;
+  --dropzone-focus-border: #3399ff;
+  --dropzone-drag-border: #3399ff;
+  --item-hover-bg: #2d2d2d;
+  --item-active-bg: #404040;
+  --button-xs-bg: #404040;
+  --button-xs-hover-bg: #4d4d4d;
+  --button-text: #ffffff;
+}

@@ -1,0 +1,27 @@
+/* Theme 4: Темная + Оранжевый (энергия) */
+:root {
+  --bg: #14120f;
+  --panel: #1a1811;
+  --border: #352f1f;
+  --text: #f5f0e5;
+  --muted: #c8b8a0;
+  --primary: #f59e0b;
+  --primary-2: #fbbf24;
+  --topbar-bg: #1a150d;
+  --tab-bg: #1c1610;
+  --tab-color: #fde68a;
+  --tab-active-bg: #332214;
+  --tab-active-color: #fff;
+  --tab-active-border: #4d4533;
+  --input-bg: #180f0a;
+  --progress-color: #10b981;
+  --dropzone-bg: #180f0a;
+  --dropzone-drag-bg: #1f0e0b;
+  --dropzone-focus-border: #fbbf24;
+  --dropzone-drag-border: #fbbf24;
+  --item-hover-bg: #2a1f1a;
+  --item-active-bg: #3a2d26;
+  --button-xs-bg: #4a3d2a;
+  --button-xs-hover-bg: #5a4a35;
+  --button-text: #fff;
+}

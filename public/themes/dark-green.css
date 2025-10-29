@@ -1,0 +1,27 @@
+/* Theme 2: Темная + Зеленый (природная тема) */
+:root {
+  --bg: #0f1414;
+  --panel: #141a18;
+  --border: #1f2d29;
+  --text: #e5f0ed;
+  --muted: #9fb8ad;
+  --primary: #10b981;
+  --primary-2: #34d399;
+  --topbar-bg: #0d1a17;
+  --tab-bg: #101c1a;
+  --tab-color: #a7f3d0;
+  --tab-active-bg: #142825;
+  --tab-active-color: #fff;
+  --tab-active-border: #2d5a4d;
+  --input-bg: #0f1a18;
+  --progress-color: #10b981;
+  --dropzone-bg: #0f1a18;
+  --dropzone-drag-bg: #0e1f1c;
+  --dropzone-focus-border: #34d399;
+  --dropzone-drag-border: #34d399;
+  --item-hover-bg: #1a2a25;
+  --item-active-bg: #263a33;
+  --button-xs-bg: #2d4a42;
+  --button-xs-hover-bg: #3a5a50;
+  --button-text: #fff;
+}

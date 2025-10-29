@@ -1,0 +1,27 @@
+/* Theme 1: Темная + Синий (базовая линия / текущий) */
+:root {
+  --bg: #0b0f14;
+  --panel: #111827;
+  --border: #1f2937;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --primary: #4f46e5;
+  --primary-2: #3b82f6;
+  --topbar-bg: #0d1420;
+  --tab-bg: #101826;
+  --tab-color: #c7d2fe;
+  --tab-active-bg: #142033;
+  --tab-active-color: #fff;
+  --tab-active-border: #334155;
+  --input-bg: #0f172a;
+  --progress-color: #10b981;
+  --dropzone-bg: #0f172a;
+  --dropzone-drag-bg: #0e1b2b;
+  --dropzone-focus-border: #3b82f6;
+  --dropzone-drag-border: #3b82f6;
+  --item-hover-bg: #1a273a;
+  --item-active-bg: #26354f;
+  --button-xs-bg: #374151;
+  --button-xs-hover-bg: #475569;
+  --button-text: #fff;
+}
