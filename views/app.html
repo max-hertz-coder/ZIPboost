@@ -4,67 +4,102 @@
   <meta charset="UTF-8" />
   <title>ZIPboost</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Подключаем стили -->
+
+  <!-- Styles -->
   <link rel="stylesheet" href="../public/style.css">
+
+  <!-- Localize.camp (авто-детект языка браузера, 30+ языков) -->
+  <script src="https://global.localizecdn.com/localize.js"></script>
+  <script>
+    try {
+      Localize.initialize({
+        key: 'rehKq6Y5KctfYobc0ZDkww==',
+        // Авто-детект и запоминание
+        rememberLanguage: true
+      });
+    } catch(e) { console.warn('Localize init failed:', e); }
+  </script>
 </head>
 <body>
   <header class="topbar">
     <nav class="tabs">
-      <button type="button" id="tab-compress" class="tab active">Compress</button>
-      <button type="button" id="tab-view" class="tab">View</button>
+      <button type="button" id="tab-compress" class="tab active" data-localize="tab_compress">Compress</button>
+      <button type="button" id="tab-view" class="tab" data-localize="tab_view">View</button>
     </nav>
+
+    <!-- Переключатель темы -->
+    <button id="btn-theme" class="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+      <span id="theme-icon">🌙</span>
+    </button>
   </header>
 
+  <!-- Предупреждения/инструкции по ограничениям браузера -->
+  <div id="env-warnings" class="env-warnings" hidden></div>
+
   <main class="container">
-    <!-- COMPRESS SECTION -->
+    <!-- COMPRESS -->
     <section id="sec-compress" class="card active">
-      <h2>Compress files</h2>
+      <h2 data-localize="compress_title">Compress files</h2>
+
       <div id="dz-compress" class="dropzone" tabindex="0">
-        <div class="dz-title">Drop files here or click to select</div>
-        <div class="dz-sub">Choose files from your computer or drag links/images</div>
+        <div class="dz-title" data-localize="compress_dz_title">Drop files here or click to select</div>
+        <div class="dz-sub" data-localize="compress_dz_sub">Choose files from your computer or drag links/images</div>
+        <!-- Скрытый input для выбора файлов -->
         <input id="inp-compress" type="file" multiple hidden />
       </div>
+
       <div id="list-compress" class="list"></div>
+
       <div class="row">
-        <label class="label">ZIP name</label>
+        <label class="label" for="zip-name" data-localize="zip_name">ZIP name</label>
         <input id="zip-name" type="text" value="archive.zip" />
       </div>
+
       <div class="field-group">
-        <label class="field-label">Compression level</label>
+        <label class="field-label" for="zip-preset" data-localize="compression_level">Compression level</label>
         <select id="zip-preset" title="Preset affects speed and resulting ZIP size">
-          <option value="quick">Quick — fastest (bigger)</option>
-          <option value="optimal" selected>Optimal — balanced</option>
-          <option value="maximum">Maximum — smallest (slower)</option>
+          <option value="quick" data-localize="preset_quick">Quick — fastest (bigger)</option>
+          <option value="optimal" selected data-localize="preset_optimal">Optimal — balanced</option>
+          <option value="maximum" data-localize="preset_maximum">Maximum — smallest (slower)</option>
         </select>
-        <div class="hint">Compression level affects speed &amp; result size</div>
+        <div class="hint" data-localize="compression_hint">Compression level affects speed &amp; result size</div>
       </div>
+
       <div class="actions">
-        <button type="button" id="btn-compress" class="primary">Compress to ZIP</button>
+        <button type="button" id="btn-compress" class="primary" data-localize="btn_compress">Compress to ZIP</button>
         <div id="progress" class="progress"></div>
         <div id="lib-status" class="meta"></div>
       </div>
     </section>
 
-    <!-- VIEW SECTION -->
+    <!-- VIEW / EXTRACT -->
     <section id="sec-view" class="card">
-      <h2>View / Extract ZIP</h2>
+      <h2 data-localize="view_title">View / Extract Archive</h2>
+
       <div id="dz-view" class="dropzone" tabindex="0">
-        <div class="dz-title">Drop ZIP/RAR/7Z/TAR here or click to select</div>
-        <div class="dz-sub">Choose archive file from your computer</div>
-        <input id="inp-zip" type="file" accept=".zip,.rar,.7z,.tar" hidden />
+        <div class="dz-title" data-localize="view_dz_title">Drop ZIP/RAR/7Z/TAR here or click to select</div>
+        <div class="dz-sub" data-localize="view_dz_sub">Choose archive file from your computer</div>
+        <!-- Скрытый input для выбора архива -->
+        <input id="inp-zip" type="file" accept=".zip,.rar,.7z,.tar,.tar.gz,.tgz" hidden />
       </div>
+
       <div class="row">
-        <button type="button" id="btn-extract-all" class="secondary">Extract all</button>
-        <button type="button" id="btn-reopen-zip" class="primary" style="display:none">Reopen ZIP</button>
-        <button type="button" id="btn-clear-state" class="secondary">Clear</button>
+        <button type="button" id="btn-extract-all" class="secondary" data-localize="btn_extract_all">Extract all</button>
+        <button type="button" id="btn-reopen-zip" class="primary" style="display:none" data-localize="btn_reopen">Reopen</button>
+        <button type="button" id="btn-clear-state" class="secondary" data-localize="btn_clear">Clear</button>
       </div>
+
       <div id="zip-meta" class="meta"></div>
       <div id="list-zip" class="list"></div>
     </section>
   </main>
 
-  <!-- Подключаем библиотеки и скрипты -->
+  <!-- Libraries -->
   <script src="../libs/jszip.min.js"></script>
-  <script src="../app.js" type="module"></script>
+  <!-- ДОБАВИТЬ: libarchive.js, чтобы был доступен глобальный Archive -->
+  <script src="../libs/libarchive/libarchive.js"></script>
+
+  <!-- Ваш основной скрипт -->
+  <script src="../public/main.js" type="module"></script>
 </body>
 </html>

@@ -1,24 +1,32 @@
-// Фоновый скрипт (service worker) — выполняется в фоновом режиме (Manifest V3)
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("[ZIPboost] Service worker installed");
+// Service Worker (MV3)
+
+chrome.runtime.onInstalled.addListener((details) => {
+  console.log('[ZIPboost] onInstalled:', details?.reason);
+  if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
+    // Открываем локальную Welcome Page (можете заменить на Tilda-URL позже)
+    chrome.tabs.create({ url: chrome.runtime.getURL('views/welcome.html') });
+    // Если у вас будет Tilda-страница, поставьте:
+    // chrome.tabs.create({ url: 'https://YOUR-TILDA-DOMAIN/welcome' });
+  }
 });
 
-// Слушаем сообщения от popup
+// Скачивания из popup (надёжнее, чем из popup напрямую)
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || !msg.type) return;
 
-  // 1) Загрузка файлов (при сжатии или извлечении всех файлов)
-  if (msg.type === "download") {
+  if (msg.type === 'download') {
     const { url, filename } = msg.payload || {};
     chrome.downloads.download(
       { url, filename, conflictAction: "uniquify", saveAs: false },
-      (id) => sendResponse({ ok: !!id, id, lastError: chrome.runtime.lastError?.message })
+      (id) => {
+        const lastError = chrome.runtime.lastError?.message;
+        sendResponse({ ok: !!id, id, lastError });
+      }
     );
     return true;
   }
 
-  // 2) Получение содержимого по URL (при перетаскивании ссылки/изображения со страницы)
-  if (msg.type === "FETCH_URL") {
+  if (msg.type === 'FETCH_URL') {
     (async () => {
       try {
         const resp = await fetch(msg.url, { credentials: "include" });
@@ -30,9 +38,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             const u = new URL(msg.url);
             const raw = (u.pathname.split("/").pop() || "file").split("?")[0];
             return raw || "file";
-          } catch {
-            return "file";
-          }
+          } catch { return "file"; }
         })();
         sendResponse({
           ok: true,
@@ -46,5 +52,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
     })();
     return true;
+  }
+});
+
+// Ловим прерванные загрузки — сообщаем popup, чтобы показать инструкцию
+chrome.downloads.onChanged.addListener((delta) => {
+  if (delta?.state?.current === 'interrupted') {
+    chrome.runtime.sendMessage({
+      type: 'DOWNLOAD_INTERRUPTED',
+      reason: delta?.error?.current || ''
+    });
   }
 });

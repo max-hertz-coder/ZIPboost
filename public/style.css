@@ -196,3 +196,47 @@ button.secondary {
 button.primary:hover, button.secondary:hover {
   opacity: 0.9;
 }
+/* ---------- THEME: Light mode ---------- */
+body.light {
+  --bg: #f6f7fb;
+  --panel: #ffffff;
+  --border: #e5e7eb;
+  --text: #0b0f14;
+  --muted: #6b7280;
+  --primary: #3b82f6;
+  --primary-2: #2563eb;
+}
+body.light .topbar { background: #ffffff; border-bottom-color: var(--border); }
+body.light .tab { background: #f3f4f6; color: #111827; }
+body.light .tab.active { background: #e5e7eb; color: #111827; border-color: #cbd5e1; }
+body.light input[type=text], body.light select { background: #f9fafb; color: #111827; }
+
+/* ---------- Dropzone states ---------- */
+.dropzone.drag-over { border-color: #3b82f6; background: rgba(59,130,246,.06); }
+
+/* ---------- Theme toggle button ---------- */
+.theme-toggle {
+  margin-left: auto;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.theme-toggle:hover { opacity: .9; }
+
+/* ---------- Env warnings panel ---------- */
+.env-warnings {
+  margin: 10px 12px 0;
+  padding: 10px 12px;
+  border: 1px solid #fca5a5;
+  background: #1f2937;
+  color: #fecaca;
+  border-radius: 6px;
+  font-size: 13px;
+}
+body.light .env-warnings { background: #fff7f7; color: #991b1b; border-color: #fecaca; }
+.env-warnings h4 { margin: 0 0 6px; font-size: 14px; }
+.env-warnings ul { margin: 6px 0 0 18px; }
+.env-warnings a { color: #60a5fa; text-decoration: underline; }

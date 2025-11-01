@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "ZIPboost — Zip Archiver & Viewer",
-  "version": "2.3.2",
-  "description": "Drag & drop to compress, view and extract ZIP files directly in Chrome.",
+  "version": "2.4.0",
+  "description": "Compress, view and extract ZIP/RAR/7Z/TAR locally in Chrome. Drag & drop or choose files.",
   "action": {
     "default_title": "Open ZIPboost",
     "default_popup": "views/app.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "permissions": [
     "downloads",
@@ -25,8 +26,15 @@
   },
   "web_accessible_resources": [
     {
-      "resources": [ "icons/*" ],
+      "resources": [
+        "icons/*",
+        "views/welcome.html",
+        "libs/libarchive/*"
+      ],
       "matches": [ "<all_urls>" ]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval' https://global.localizecdn.com; object-src 'self'; worker-src 'self' blob:; connect-src 'self' https://api.localizejs.com https://localize.camp https://global.localizecdn.com blob: data:;"
+  }
 }
