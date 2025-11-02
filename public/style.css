@@ -193,7 +193,269 @@ select { cursor: pointer; }
 .item button.xs:hover {
   background: var(--button-xs-hover-bg);
 }
-.item button.xs.file-dl {
+.item button.xs.fil:root {
+  --bg: #0b0f14;
+  --panel: #111827;
+  --border: #1f2937;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --primary: #4f46e5;
+  --primary-2: #3b82f6;
+  --topbar-bg: #0d1420;
+  --tab-bg: #101826;
+  --tab-color: #c7d2fe;
+  --tab-active-bg: #142033;
+  --tab-active-color: #fff;
+  --tab-active-border: #334155;
+  --input-bg: #0f172a;
+  --input-color: #fff;
+  --dropzone-bg: #0f172a;
+  --dropzone-drag-bg: #0e1b2b;
+  --item-hover-bg: #1a273a;
+  --item-active-bg: #26354f;
+  --button-xs-bg: #374151;
+  --button-xs-hover-bg: #475569;
+  --button-xs-color: #fff;
+  --progress-color: #10b981;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial, sans-serif;
+  /* комфортный размер попапа, меньше промахов */
+  width: 380px;
+  min-height: 560px;
+}
+
+/* Top bar */
+.topbar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--topbar-bg);
+}
+.tabs { display: flex; gap: 8px; }
+.tab {
+  background: var(--tab-bg);
+  border: 1px solid var(--border);
+  color: var(--tab-color);
+  padding: 10px 14px;                 /* ↑ hit-area */
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+}
+.tab.active {
+  background: var(--tab-active-bg);
+  color: var(--tab-active-color);
+  border-color: var(--tab-active-border);
+}
+
+/* Layout */
+.container {
+  min-width: 320px;
+  max-width: 400px;
+  padding: 12px;
+}
+.card {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--panel);
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.card.active { display: flex; }
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+/* Form */
+.field-group { margin: 12px 0; }
+.field-group select { width: 100%; margin-bottom: 4px; }
+.field-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.label { flex: 0 0 80px; }
+input[type=text], select {
+  flex: 1 1 auto;
+  min-width: 0;                       /* важно: чтобы не выпирало из flex-контейнера */
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--input-color);
+  overflow: hidden;
+  text-overflow: ellipsis;            /* длинные имена не вылезают */
+  white-space: nowrap;
+}
+select { cursor: pointer; }
+.hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.meta  { font-size: 12px; color: var(--muted); }
+.progress { font-size: 13px; color: var(--progress-color); margin-left: 8px; }
+
+/* Dropzone */
+.dropzone {
+  text-align: center;
+  padding: 20px;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  background: var(--dropzone-bg);
+  cursor: pointer;
+  outline: none;
+  min-height: 132px;                  /* ↑ hit-area зоны dnd */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.dropzone:focus { border-color: var(--primary-2); }
+.dropzone.drag { border-color: var(--primary-2); background: var(--dropzone-drag-bg); }
+.dz-title { font-size: 15px; margin-bottom: 4px; color: var(--text); }
+.dz-sub   { font-size: 13px; color: var(--muted); }
+
+/* File list */
+.list { max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; }
+.item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px;                  /* ↑ hit-area элементов списка */
+  border-bottom: 1px solid var(--border);
+}
+.item:last-child { border: none; }
+.name { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.meta { flex: 0 0 auto; margin-left: 8px; }
+.item.file:hover  { background: var(--item-hover-bg); }
+.item.file:active { background: var(--item-active-bg); }
+
+.item button.xs {
+  background: var(--button-xs-bg);
+  border: none;
+  color: var(--button-xs-color);
+  font-size: 13px;
+  padding: 7px 12px;                  /* ↑ hit-area крестика/кнопок */
+  cursor: pointer;
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: background-color 0.2s, transform .02s;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 30px;
+}
+.item button.xs:hover { background: var(--button-xs-hover-bg); }
+.item button.xs.file-dl { font-weight: 500; }
+.file-actions { display: flex; gap: 8px; margin-left: 8px; flex-shrink: 0; }
+
+/* Buttons (primary/secondary) — большие hit-areas */
+button.primary, button.secondary {
+  cursor: pointer;
+  padding: 10px 16px;
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;                   /* ↑ hit-area основных кнопок */
+}
+button.primary { background: var(--primary); color: #fff; }
+button.secondary { background: var(--panel); border: 1px solid var(--border); color: var(--text); }
+button.primary:hover, button.secondary:hover { opacity: 0.92; }
+
+/* ---------- THEME: Light mode ---------- */
+body.light {
+  --bg: #f6f7fb;
+  --panel: #ffffff;
+  --border: #e5e7eb;
+  --text: #0b0f14;
+  --muted: #6b7280;
+  --primary: #3b82f6;
+  --primary-2: #2563eb;
+  --topbar-bg: #ffffff;
+  --tab-bg: #f3f4f6;
+  --tab-color: #111827;
+  --tab-active-bg: #e5e7eb;
+  --tab-active-color: #111827;
+  --tab-active-border: #cbd5e1;
+  --input-bg: #f9fafb;
+  --input-color: #111827;
+  --dropzone-bg: #f9fafb;
+  --dropzone-drag-bg: #f3f4f6;
+  --item-hover-bg: #f3f4f6;
+  --item-active-bg: #e5e7eb;
+  --button-xs-bg: #e5e7eb;
+  --button-xs-hover-bg: #d1d5db;
+  --button-xs-color: #111827;
+  --progress-color: #059669;
+}
+
+/* ---------- Dropzone states ---------- */
+.dropzone.drag-over { border-color: var(--primary-2); background: rgba(59,130,246,.06); }
+body.light .dropzone.drag-over { background: rgba(59,130,246,.1); }
+
+/* ---------- Theme toggle button ---------- */
+.theme-toggle {
+  margin-left: auto;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;                  /* ↑ hit-area переключателя темы */
+  cursor: pointer;
+  min-height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.theme-toggle:hover { opacity: .9; }
+
+/* ---------- Reopen message ---------- */
+.reopen-message {
+  padding: 10px;
+  background: var(--panel);
+  border-radius: 6px;
+  margin-bottom: 10px;
+  border-left: 4px solid var(--primary-2);
+}
+.reopen-item {
+  opacity: 0.7;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--input-bg);
+  cursor: pointer;
+}
+
+/* ---------- Env warnings panel ---------- */
+.env-warnings {
+  margin: 10px 12px 0;
+  padding: 10px 12px;
+  border: 1px solid #fca5a5;
+  background: var(--panel);
+  color: #fecaca;
+  border-radius: 6px;
+  font-size: 13px;
+}
+body.light .env-warnings { background: #fff7f7; color: #991b1b; border-color: #fecaca; }
+.env-warnings h4 { margin: 0 0 6px; font-size: 14px; }
+.env-warnings ul { margin: 6px 0 0 18px; }
+.env-warnings a { color: #60a5fa; text-decoration: underline; }
+e-dl {
   font-weight: 500;
 }
 .file-actions {
@@ -305,3 +567,85 @@ body.light .env-warnings {
 .env-warnings h4 { margin: 0 0 6px; font-size: 14px; }
 .env-warnings ul { margin: 6px 0 0 18px; }
 .env-warnings a { color: #60a5fa; text-decoration: underline; }
+
+/* ==== Bigger hit areas & layout guard ==== */
+html, body {
+  /* чуть шире попап — легче попадать */
+  width: 360px;
+  min-height: 560px;
+}
+
+.topbar { padding: 8px 10px; }
+
+.tab {
+  padding: 10px 14px;
+  min-height: 36px;
+  border-radius: 10px;
+}
+
+button,
+.button {
+  min-height: 40px;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.icon-btn {            /* для кнопки темы в шапке */
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropzone, #dz-compress, #dz-view {
+  min-height: 130px;
+  padding: 18px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+/* крестик удаления файла — легче попасть */
+.item-remove {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+/* на всякий: подсветка фокуса */
+button:focus-visible, .tab:focus-visible, .icon-btn:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
+}
+
+
+/* inputs take full width and never bleed */
+input[type="text"],
+input[type="search"],
+#zip-name {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* контейнеры форм не дают контенту прилипать к краям */
+.field-group,
+.row {
+  padding-right: 4px;
+}
+
+/* светлая тема — те же размеры */
+:root.light input[type="text"],
+:root.light input[type="search"],
+:root.light #zip-name {
+  width: 100%;
+  max-width: 100%;
+}
