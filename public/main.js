@@ -12,15 +12,171 @@ let currentArchiveFile = null;
 let archiveAPI = null; // libarchive handler
 let currentZipJS = null; // JSZip instance for ZIP view
 let filesToCompress = [];
+let currentArchiveName = null;
+let currentArchiveEntries = null;
+
+// ---------- Storage helpers ----------
+const storageGet = (keys) => new Promise(r => chrome.storage?.local.get(keys, r));
+const storageSet = (obj) => new Promise(r => chrome.storage?.local.set(obj, r));
+
+// ---------- Persist / Restore ----------
+async function saveState(statePatch = {}) {
+  const cur = (await storageGet(['zipboost_state'])).zipboost_state || {};
+  const next = { ...cur, ...statePatch };
+  
+  // Сохраняем файлы для сжатия
+  if (filesToCompress.length > 0) {
+    const compressFiles = [];
+    for (const f of filesToCompress) {
+      try {
+        const ab = await f.arrayBuffer();
+        compressFiles.push({
+          name: f.name,
+          type: f.type,
+          data: Array.from(new Uint8Array(ab))
+        });
+      } catch (e) {
+        console.warn('Failed to serialize file:', f.name, e);
+      }
+    }
+    next.compressFiles = compressFiles;
+  }
+  
+  // Сохраняем архив (ZIP blob) - только если это File объект
+  if (currentZipJS && currentArchiveFile && currentArchiveFile instanceof File) {
+    try {
+      const ab = await currentArchiveFile.arrayBuffer();
+      next.currentZipData = Array.from(new Uint8Array(ab));
+      next.currentZipName = currentArchiveFile.name;
+      next.currentArchiveEntries = currentArchiveEntries || Object.keys(currentZipJS.files);
+    } catch (e) {
+      console.warn('Failed to serialize archive:', e);
+    }
+  } else if (!currentZipJS && !currentArchiveFile) {
+    // Очищаем данные архива если его нет
+    next.currentZipData = null;
+    next.currentZipName = null;
+    next.currentArchiveEntries = null;
+  }
+  
+  // Сохраняем активную вкладку
+  const tabCompress = $('#tab-compress');
+  const secCompress = $('#sec-compress');
+  if (tabCompress && secCompress) {
+    next.activeTab = secCompress.classList.contains('active') ? 'compress' : 'view';
+  }
+  
+  // Сохраняем настройки сжатия
+  const nameInput = $('#zip-name');
+  const presetSel = $('#zip-preset');
+  if (nameInput) next.zipName = nameInput.value;
+  if (presetSel) next.preset = presetSel.value;
+  
+  await storageSet({ zipboost_state: next });
+  return next;
+}
+
+async function loadState() {
+  const res = (await storageGet(['zipboost_state'])).zipboost_state || null;
+  if (!res) return null;
+  
+  // Восстанавливаем файлы для сжатия
+  if (res.compressFiles?.length) {
+    try {
+      filesToCompress = res.compressFiles.map(f => 
+        new File([new Uint8Array(f.data)], f.name, { type: f.type })
+      );
+    } catch (e) {
+      console.warn('Failed to restore compress files:', e);
+      filesToCompress = [];
+    }
+  }
+  
+  // Восстанавливаем архив
+  if (res.currentZipData && res.currentZipName) {
+    try {
+      const u8 = new Uint8Array(res.currentZipData);
+      const blob = new Blob([u8], { type: 'application/zip' });
+      currentArchiveFile = new File([blob], res.currentZipName, { type: 'application/zip' });
+      currentArchiveEntries = res.currentArchiveEntries;
+      
+      // Перезагружаем ZIP из blob
+      if (typeof JSZip !== 'undefined') {
+        currentZipJS = await JSZip.loadAsync(u8);
+      }
+    } catch (e) {
+      console.warn('Failed to restore archive:', e);
+      currentArchiveFile = null;
+      currentZipJS = null;
+    }
+  }
+  
+  return res;
+}
+
+async function restoreState() {
+  const state = await loadState();
+  if (!state) return;
+  
+  // Восстанавливаем активную вкладку
+  const tabCompress = $('#tab-compress');
+  const tabView = $('#tab-view');
+  const secCompress = $('#sec-compress');
+  const secView = $('#sec-view');
+  
+  if (state.activeTab === 'view' && tabView && secView) {
+    tabCompress?.classList.remove('active');
+    tabView.classList.add('active');
+    secCompress?.classList.remove('active');
+    secView.classList.add('active');
+  } else if (state.activeTab === 'compress' && tabCompress && secCompress) {
+    tabView?.classList.remove('active');
+    tabCompress.classList.add('active');
+    secView?.classList.remove('active');
+    secCompress.classList.add('active');
+  }
+  
+  // Восстанавливаем настройки сжатия
+  const nameInput = $('#zip-name');
+  const presetSel = $('#zip-preset');
+  if (nameInput && state.zipName) nameInput.value = state.zipName;
+  if (presetSel && state.preset) presetSel.value = state.preset;
+  
+  // Восстанавливаем архив если он был открыт
+  if (window._restoreArchive) {
+    await window._restoreArchive();
+  }
+  
+  // Обновляем список файлов для сжатия (если они были)
+  if (filesToCompress.length > 0 && window._renderCompressList) {
+    setTimeout(() => {
+      window._renderCompressList();
+    }, 100);
+  }
+}
 
 // ---------- Init ----------
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   bindTabs();
   bindTheme();
   bindCompressUI();
   bindViewUI();
   maybeInitLibArchive(); // try to init libarchive if bundled
-  $('#lib-status').textContent = archiveAPI ? 'libarchive: enabled' : 'libarchive: not found (ZIP only)';
+  // Убрано сообщение о libarchive
+  // $('#lib-status').textContent = archiveAPI ? 'libarchive: enabled' : 'libarchive: not found (ZIP only)';
+  
+  // Восстанавливаем состояние после того, как UI привязан
+  await restoreState();
+  
+  // Сохраняем перед закрытием popup
+  document.addEventListener('visibilitychange', async () => {
+    if (document.hidden) {
+      await saveState();
+    }
+  });
+  
+  // Периодическое сохранение (на случай если visibilitychange не сработает)
+  setInterval(() => saveState(), 3000);
 });
 
 // ---------- Tabs ----------
@@ -30,7 +186,7 @@ function bindTabs() {
   const secCompress = $('#sec-compress');
   const secView = $('#sec-view');
 
-  const activate = (name) => {
+  const activate = async (name) => {
     if (name === 'compress') {
       tabCompress.classList.add('active'); tabView.classList.remove('active');
       secCompress.classList.add('active'); secView.classList.remove('active');
@@ -38,6 +194,7 @@ function bindTabs() {
       tabView.classList.add('active'); tabCompress.classList.remove('active');
       secView.classList.add('active'); secCompress.classList.remove('active');
     }
+    await saveState({ activeTab: name });
   };
 
   tabCompress.addEventListener('click', () => activate('compress'));
@@ -63,7 +220,7 @@ function bindTheme() {
   function setTheme(mode) {
     if (mode === 'light') {
       document.body.classList.add('light');
-      icon.textContent = '🌞';
+      icon.textContent = '☀️';
     } else {
       document.body.classList.remove('light');
       icon.textContent = '🌙';
@@ -95,7 +252,7 @@ function showWarning(kind, extra='') {
       <h4>Blob URL download seems blocked</h4>
       <ul>
         <li>Disable ad blockers (uBlock/AdBlock) for this extension popup.</li>
-        <li>Try "Extract all" again after whitelisting.</li>
+        <li>Try "Download all" again after whitelisting.</li>
       </ul>`;
   } else {
     html = `<h4>Notice</h4><div>${extra}</div>`;
@@ -141,19 +298,22 @@ function bindCompressUI() {
   // DnD
   dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag-over'); });
   dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-  dz.addEventListener('drop', (e) => {
+  dz.addEventListener('drop', async (e) => {
     e.preventDefault(); dz.classList.remove('drag-over');
     if (e.dataTransfer.files?.length) {
       filesToCompress = Array.from(e.dataTransfer.files);
       renderCompressList();
+      await saveState();
     }
   });
   dz.addEventListener('click', () => inp.click());
-  inp.addEventListener('change', () => {
+  inp.addEventListener('change', async () => {
     if (inp.files?.length) {
       filesToCompress = Array.from(inp.files);
       renderCompressList();
+      await saveState();
     }
+    inp.value = '';
   });
 
   function renderCompressList() {
@@ -170,12 +330,29 @@ function bindCompressUI() {
       list.appendChild(row);
     });
     $$('.item .xs', list).forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const i = +btn.dataset.idx;
         filesToCompress.splice(i, 1);
         renderCompressList();
+        await saveState();
       });
     });
+  }
+  
+  // Сохраняем функцию рендеринга для восстановления
+  window._renderCompressList = renderCompressList;
+  
+  // Восстанавливаем список файлов при загрузке
+  if (filesToCompress.length > 0) {
+    renderCompressList();
+  }
+  
+  // Сохраняем при изменении имени архива или пресета
+  if (nameInput) {
+    nameInput.addEventListener('input', () => saveState());
+  }
+  if (presetSel) {
+    presetSel.addEventListener('change', () => saveState());
   }
 
   btn.addEventListener('click', async () => {
@@ -232,8 +409,13 @@ function bindViewUI() {
   const list = $('#list-zip');
   const meta = $('#zip-meta');
 
-  $('#btn-clear-state').addEventListener('click', () => {
-    list.innerHTML = ''; meta.textContent = ''; currentArchiveFile = null; currentZipJS = null;
+  $('#btn-clear-state').addEventListener('click', async () => {
+    list.innerHTML = ''; 
+    meta.textContent = ''; 
+    currentArchiveFile = null; 
+    currentZipJS = null;
+    currentArchiveEntries = null;
+    await storageSet({ zipboost_state: null });
   });
 
   $('#btn-reopen-zip').addEventListener('click', () => {
@@ -276,7 +458,9 @@ function bindViewUI() {
       // Use JSZip
       const ab = await file.arrayBuffer();
       currentZipJS = await JSZip.loadAsync(ab);
+      currentArchiveEntries = Object.keys(currentZipJS.files);
       renderZipEntriesJSZip(currentZipJS);
+      await saveState();
       return;
     }
 
@@ -287,12 +471,27 @@ function bindViewUI() {
       }
       const archive = await archiveAPI.open(file);
       const filesObj = await archive.getFilesObject(); // map: name -> CompressedFile
+      currentArchiveEntries = Object.keys(filesObj);
       renderArchiveEntries(filesObj);
+      await saveState();
       return;
     }
 
     alert('Unsupported format. Please open ZIP/RAR/7Z/TAR.');
   }
+  
+  // Восстанавливаем архив при загрузке (будет вызвано из restoreState после загрузки DOM)
+  const restoreArchive = async () => {
+    if (currentZipJS && currentArchiveFile) {
+      if (isZipName(currentArchiveFile.name)) {
+        meta.textContent = `Archive: ${currentArchiveFile.name} — ${fmt(currentArchiveFile.size)}`;
+        renderZipEntriesJSZip(currentZipJS);
+      }
+    }
+  };
+  
+  // Сохраняем функцию для вызова после загрузки состояния
+  window._restoreArchive = restoreArchive;
 
   function renderZipEntriesJSZip(zip) {
     list.innerHTML = '';
@@ -300,29 +499,95 @@ function bindViewUI() {
       if (entry.dir) return;
       const row = document.createElement('div');
       row.className = 'item file';
+      const size = entry._data ? fmt(entry._data.uncompressedSize||0) : '';
       row.innerHTML = `
         <div class="name">${path}</div>
-        <div class="meta">${entry._data ? fmt(entry._data.uncompressedSize||0) : ''}</div>
-        <div class="file-actions"><button class="xs" data-path="${path}">Open</button></div>`;
+        <div class="meta">${size}</div>
+        <div class="file-actions">
+          <button class="secondary xs file-open" data-path="${path}" title="Open in browser">Open</button>
+          <button class="secondary xs file-dl" data-path="${path}" title="Download file">Download</button>
+        </div>`;
       list.appendChild(row);
     });
-    $$('.file-actions .xs', list).forEach(btn => {
+    
+    // Обработчик для кнопки Open
+    $$('.file-actions .file-open', list).forEach(btn => {
       btn.addEventListener('click', async () => {
         const path = btn.dataset.path;
         const entry = currentZipJS.files[path];
         if (!entry) return;
-        const ext = (path.split('.').pop()||'').toLowerCase();
-        if (['txt','md','csv','json','js','css','log'].includes(ext)) {
-          const text = await entry.async('string');
-          const w = window.open('', '_blank');
-          if (w) w.document.body.innerHTML = `<pre>${escapeHTML(text)}</pre>`;
-        } else if (['png','jpg','jpeg','gif','bmp','webp','svg'].includes(ext)) {
-          const blob = await entry.async('blob');
-          const url = URL.createObjectURL(blob);
-          window.open(url, '_blank'); setTimeout(()=>URL.revokeObjectURL(url), 8000);
-        } else {
+        try {
+          const ext = (path.split('.').pop()||'').toLowerCase();
+          const mime = getMimeType(path);
+          
+          // Текстовые файлы - создаем HTML страницу с содержимым
+          const textExts = ['txt','md','csv','json','js','css','html','htm','xml','log','ini','bat','sh','ps1','py','java','cpp','c','h','php','rb','go','rs','ts','tsx','jsx','yaml','yml','toml','cfg','conf','sql','xml','svg'];
+          if (textExts.includes(ext) || mime.startsWith('text/') || mime === 'application/json' || mime === 'application/xml' || mime === 'text/xml') {
+            const text = await entry.async('string');
+            const w = window.open('', '_blank');
+            if (w) {
+              const escaped = escapeHTML(text);
+              w.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <meta charset="utf-8">
+                  <title>${path}</title>
+                  <style>
+                    body { font-family: monospace; padding: 20px; background: #fff; color: #000; line-height: 1.6; }
+                    @media (prefers-color-scheme: dark) { body { background: #1e1e1e; color: #d4d4d4; } }
+                    pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; }
+                  </style>
+                </head>
+                <body><pre>${escaped}</pre></body>
+                </html>
+              `);
+              w.document.close();
+            }
+            return;
+          }
+          
+          // Изображения - открываем через blob URL
+          if (['png','jpg','jpeg','gif','bmp','webp','svg','ico','tiff'].includes(ext) || mime.startsWith('image/')) {
+            const blob = await entry.async('blob');
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 8000);
+            return;
+          }
+          
+          // PDF и документы Office - открываем через blob URL
+          if (mime === 'application/pdf' || mime.startsWith('application/vnd.') || mime === 'application/msword') {
+            const blob = await entry.async('blob');
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+            return;
+          }
+          
+          // Остальные - скачиваем
           const blob = await entry.async('blob');
           await saveBlob(blob, path);
+        } catch (err) {
+          console.error('Open error:', err);
+          alert('Failed to open file: ' + err.message);
+        }
+      });
+    });
+    
+    // Обработчик для кнопки Download
+    $$('.file-actions .file-dl', list).forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const path = btn.dataset.path;
+        const entry = currentZipJS.files[path];
+        if (!entry) return;
+        try {
+          const blob = await entry.async('blob');
+          const safePath = path.replace(/^\/+/, "").replace(/\\/g, "/");
+          await saveBlob(blob, safePath);
+        } catch (err) {
+          console.error('Download error:', err);
+          alert('Failed to download file: ' + err.message);
         }
       });
     });
@@ -336,11 +601,15 @@ function bindViewUI() {
       row.innerHTML = `
         <div class="name">${name}</div>
         <div class="meta"></div>
-        <div class="file-actions"><button class="xs" data-name="${name}">Open</button></div>`;
+        <div class="file-actions">
+          <button class="secondary xs file-open" data-name="${name}" title="Open in browser">Open</button>
+          <button class="secondary xs file-dl" data-name="${name}" title="Download file">Download</button>
+        </div>`;
       list.appendChild(row);
     });
 
-    $$('.file-actions .xs', list).forEach(btn => {
+    // Обработчик для кнопки Open
+    $$('.file-actions .file-open', list).forEach(btn => {
       btn.addEventListener('click', async () => {
         const name = btn.dataset.name;
         const cf = filesObj[name]; // CompressedFile
@@ -361,6 +630,38 @@ function bindViewUI() {
             }
           } else {
             console.error(e); alert('Cannot open this file.');
+          }
+        }
+      });
+    });
+    
+    // Обработчик для кнопки Download
+    $$('.file-actions .file-dl', list).forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const name = btn.dataset.name;
+        const cf = filesObj[name]; // CompressedFile
+        try {
+          const file = await cf.extract(); // returns File(Blob)
+          const safePath = name.replace(/^\/+/, "").replace(/\\/g, "/");
+          await saveBlob(file, safePath);
+        } catch (e) {
+          if (String(e).toLowerCase().includes('encrypted')) {
+            const pwd = prompt('Archive is encrypted. Enter password:');
+            if (pwd) {
+              try {
+                const arch = await archiveAPI.open(currentArchiveFile);
+                arch.usePassword(pwd);
+                const ff = await arch.extractFiles();
+                const file2 = ff[name];
+                const safePath = name.replace(/^\/+/, "").replace(/\\/g, "/");
+                await saveBlob(file2, safePath);
+              } catch (e2) { 
+                alert('Wrong password or cannot extract.'); 
+              }
+            }
+          } else {
+            console.error(e);
+            alert('Failed to download file: ' + (e.message || 'Unknown error'));
           }
         }
       });
@@ -411,6 +712,89 @@ async function saveBlob(blobOrFile, filename) {
     console.warn('saveBlob failed', e);
     showWarning('multi'); return false;
   }
+}
+
+function getMimeType(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  const m = {
+    // images
+    png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
+    webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', ico: 'image/x-icon', tiff: 'image/tiff',
+    // docs
+    pdf: 'application/pdf', doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    // text/code
+    txt: 'text/plain', md: 'text/markdown', rtf: 'application/rtf',
+    html: 'text/html', htm: 'text/html', xml: 'text/xml',
+    css: 'text/css', js: 'text/javascript', json: 'application/json',
+    csv: 'text/csv', log: 'text/plain', ini: 'text/plain',
+    // archives
+    zip: 'application/zip', rar: 'application/x-rar-compressed',
+    '7z': 'application/x-7z-compressed', tar: 'application/x-tar',
+    gz: 'application/gzip', bz2: 'application/x-bzip2',
+    // av
+    mp3: 'audio/mpeg', wav: 'audio/wav', mp4: 'video/mp4', avi: 'video/x-msvideo',
+    mov: 'video/quicktime', wmv: 'video/x-ms-wmv',
+    // other
+    exe: 'application/x-msdownload', dll: 'application/x-msdownload',
+    bat: 'text/plain', sh: 'text/plain', ps1: 'text/plain'
+  };
+  return m[ext] || 'application/octet-stream';
+}
+
+async function openOrSaveByType(file, name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  const mime = file.type || getMimeType(name);
+  
+  // Текстовые файлы - создаем HTML страницу с содержимым
+  const textExts = ['txt','md','csv','json','js','css','html','htm','xml','log','ini','bat','sh','ps1','py','java','cpp','c','h','php','rb','go','rs','ts','tsx','jsx','yaml','yml','toml','cfg','conf','sql'];
+  if (textExts.includes(ext) || mime.startsWith('text/') || mime === 'application/json' || mime === 'application/xml' || mime === 'text/xml') {
+    const text = await file.text();
+    const w = window.open('', '_blank');
+    if (w) {
+      const escaped = escapeHTML(text);
+      w.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${name}</title>
+          <style>
+            body { font-family: monospace; padding: 20px; background: #fff; color: #000; line-height: 1.6; }
+            @media (prefers-color-scheme: dark) { body { background: #1e1e1e; color: #d4d4d4; } }
+            pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; }
+          </style>
+        </head>
+        <body><pre>${escaped}</pre></body>
+        </html>
+      `);
+      w.document.close();
+    }
+    return;
+  }
+  
+  // Изображения - открываем через blob URL
+  if (['png','jpg','jpeg','gif','bmp','webp','svg','ico','tiff'].includes(ext) || mime.startsWith('image/')) {
+    const url = URL.createObjectURL(file);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 8000);
+    return;
+  }
+  
+  // PDF и документы Office - открываем через blob URL
+  if (mime === 'application/pdf' || mime.startsWith('application/vnd.') || mime === 'application/msword') {
+    const url = URL.createObjectURL(file);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    return;
+  }
+  
+  // Остальные - скачиваем
+  await saveBlob(file, name);
 }
 
 function escapeHTML(s) {

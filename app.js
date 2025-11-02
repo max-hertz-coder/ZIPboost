@@ -353,11 +353,23 @@ function renderZipEntries(entries) {
   listV.innerHTML = entries.map(path => {
     const entry = currentZip.files[path];
     const label = entry.dir ? `[Folder] ${path}` : path;
-    const right = entry.dir ? "—" : "";
+    let right = "";
+    if (!entry.dir) {
+      // Пытаемся получить размер файла разными способами
+      let size = 0;
+      if (entry._data && entry._data.uncompressedSize) {
+        size = entry._data.uncompressedSize;
+      } else if (entry.uncompressedSize) {
+        size = entry.uncompressedSize;
+      }
+      right = size > 0 ? fmt(size) : "";
+    } else if (entry.dir) {
+      right = "—";
+    }
     const buttons = entry.dir ? "" : `
       <div class="file-actions">
-        <button class="secondary xs file-open" data-path="${path}" title="Open" type="button">Open</button>
-        <button class="secondary xs file-dl"   data-path="${path}" title="Download" type="button">⬇</button>
+        <button class="secondary xs file-open" data-path="${path}" title="Open in browser" type="button">Open</button>
+        <button class="secondary xs file-dl"   data-path="${path}" title="Download file" type="button">Download</button>
       </div>`;
     return `<div class="item file" data-path="${path}">
       <div class="name" title="${path}">${label}</div>
@@ -377,18 +389,60 @@ function renderZipEntries(entries) {
       try {
         const ab = await entry.async("arraybuffer");
         const mime = extMime(path);
-        const blob = new Blob([ab], { type: mime });
-        const url = URL.createObjectURL(blob);
-
-        if (canOpenInBrowser(mime)) {
+        const ext = (path.split(".").pop() || "").toLowerCase();
+        
+        // Текстовые файлы - создаем HTML страницу с содержимым
+        const textExts = ['txt', 'md', 'csv', 'json', 'js', 'css', 'html', 'htm', 'xml', 'log', 'ini', 'bat', 'sh', 'ps1', 'py', 'java', 'cpp', 'c', 'h', 'php', 'rb', 'go', 'rs', 'ts', 'tsx', 'jsx', 'yaml', 'yml', 'toml', 'cfg', 'conf'];
+        if (textExts.includes(ext) || mime.startsWith("text/") || mime === "application/json" || mime === "application/xml" || mime === "text/xml") {
+          const text = await entry.async("string");
+          const w = window.open("", "_blank");
+          if (w) {
+            const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            w.document.write(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <meta charset="utf-8">
+                <title>${path}</title>
+                <style>
+                  body { font-family: monospace; padding: 20px; background: #fff; color: #000; line-height: 1.6; }
+                  @media (prefers-color-scheme: dark) { body { background: #1e1e1e; color: #d4d4d4; } }
+                  pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; }
+                </style>
+              </head>
+              <body><pre>${escaped}</pre></body>
+              </html>
+            `);
+            w.document.close();
+          }
+          return;
+        }
+        
+        // Изображения - открываем через blob URL
+        if (mime.startsWith("image/")) {
+          const blob = new Blob([ab], { type: mime });
+          const url = URL.createObjectURL(blob);
           window.open(url, "_blank");
           setTimeout(() => URL.revokeObjectURL(url), 10000);
-        } else {
-          chrome.downloads.download(
-            { url, filename: path, conflictAction: "uniquify", saveAs: false },
-            () => setTimeout(() => URL.revokeObjectURL(url), 3000)
-          );
+          return;
         }
+        
+        // PDF и другие документы - открываем через blob URL
+        if (mime === "application/pdf" || mime.startsWith("application/vnd.") || mime === "application/json") {
+          const blob = new Blob([ab], { type: mime });
+          const url = URL.createObjectURL(blob);
+          window.open(url, "_blank");
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+          return;
+        }
+        
+        // Остальные - скачиваем
+        const blob = new Blob([ab], { type: mime });
+        const url = URL.createObjectURL(blob);
+        chrome.downloads.download(
+          { url, filename: path, conflictAction: "uniquify", saveAs: false },
+          () => setTimeout(() => URL.revokeObjectURL(url), 3000)
+        );
       } catch (err) {
         console.error("open error:", err);
         alert("Failed to open file: " + err.message);
@@ -407,9 +461,22 @@ function renderZipEntries(entries) {
         const ab = await entry.async("arraybuffer");
         const blob = new Blob([ab], { type: extMime(path) });
         const url = URL.createObjectURL(blob);
+        // Очищаем путь от слешей в начале и нормализуем
+        const safePath = path.replace(/^\/+/, "").replace(/\\/g, "/");
         chrome.downloads.download(
-          { url, filename: path, conflictAction: "uniquify", saveAs: false },
-          () => setTimeout(() => URL.revokeObjectURL(url), 3000)
+          { 
+            url, 
+            filename: safePath, 
+            conflictAction: "uniquify", 
+            saveAs: false 
+          },
+          (downloadId) => {
+            setTimeout(() => URL.revokeObjectURL(url), 3000);
+            if (chrome.runtime.lastError) {
+              console.error("Download error:", chrome.runtime.lastError.message);
+              alert("Failed to download file: " + chrome.runtime.lastError.message);
+            }
+          }
         );
       } catch (err) {
         console.error("download error:", err);
@@ -425,11 +492,11 @@ function renderZipNeedsReopen(state) {
   btnExtract.style.display = "none";
 
   listV.innerHTML = `
-    <div class="meta" style="padding:10px; background:#1f2937; border-radius:4px; margin-bottom:10px; border-left:4px solid #3b82f6;">
+    <div class="meta reopen-message">
       <strong>📁 ZIP needs to be reopened</strong><br>
       Click "Reopen ZIP" or drop "${state.currentZipName}" again.
     </div>
-    ${state.entries.map(p => `<div class="item file" style="opacity:.7; padding:8px; border-radius:4px; background:#0f172a; cursor:pointer;"><div class="name">${p}</div><div class="meta">reopen</div></div>`).join("")}
+    ${state.entries.map(p => `<div class="item file reopen-item"><div class="name">${p}</div><div class="meta">reopen</div></div>`).join("")}
   `;
   $$(".item.file", listV).forEach(el => on(el, "click", () => inV.click()));
 }

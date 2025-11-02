@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ZIPboost</title>
+  <title>Create Zip FIle</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Styles -->
@@ -43,7 +43,7 @@
 
       <div id="dz-compress" class="dropzone" tabindex="0">
         <div class="dz-title" data-localize="compress_dz_title">Drop files here or click to select</div>
-        <div class="dz-sub" data-localize="compress_dz_sub">Choose files from your computer or drag links/images</div>
+        <div class="dz-sub" data-localize="compress_dz_sub">Choose files from your computer</div>
         <!-- Скрытый input для выбора файлов -->
         <input id="inp-compress" type="file" multiple hidden />
       </div>
@@ -66,7 +66,7 @@
       </div>
 
       <div class="actions">
-        <button type="button" id="btn-compress" class="primary" data-localize="btn_compress">Compress to ZIP</button>
+        <button type="button" id="btn-compress" class="primary" data-localize="btn_compress">Create Zip File</button>
         <div id="progress" class="progress"></div>
         <div id="lib-status" class="meta"></div>
       </div>
@@ -74,17 +74,17 @@
 
     <!-- VIEW / EXTRACT -->
     <section id="sec-view" class="card">
-      <h2 data-localize="view_title">View / Extract Archive</h2>
+      <h2 data-localize="view_title">View ZIP File</h2>
 
       <div id="dz-view" class="dropzone" tabindex="0">
-        <div class="dz-title" data-localize="view_dz_title">Drop ZIP/RAR/7Z/TAR here or click to select</div>
+        <div class="dz-title" data-localize="view_dz_title">Drop ZIP file here or click to select</div>
         <div class="dz-sub" data-localize="view_dz_sub">Choose archive file from your computer</div>
         <!-- Скрытый input для выбора архива -->
         <input id="inp-zip" type="file" accept=".zip,.rar,.7z,.tar,.tar.gz,.tgz" hidden />
       </div>
 
       <div class="row">
-        <button type="button" id="btn-extract-all" class="secondary" data-localize="btn_extract_all">Extract all</button>
+        <button type="button" id="btn-extract-all" class="secondary" data-localize="btn_extract_all">Download all</button>
         <button type="button" id="btn-reopen-zip" class="primary" style="display:none" data-localize="btn_reopen">Reopen</button>
         <button type="button" id="btn-clear-state" class="secondary" data-localize="btn_clear">Clear</button>
       </div>

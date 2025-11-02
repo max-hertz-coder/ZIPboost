@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "ZIPboost — Zip Archiver & Viewer",
+  "name": "Create Zip FIle",
   "version": "2.4.0",
   "description": "Compress, view and extract ZIP/RAR/7Z/TAR locally in Chrome. Drag & drop or choose files.",
   "action": {
-    "default_title": "Open ZIPboost",
+    "default_title": "Create Zip FIle",
     "default_popup": "views/app.html"
   },
   "background": {
@@ -20,9 +20,9 @@
     "<all_urls>"
   ],
   "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "16": "icons/16x16.png",
+    "48": "icons/48x48.png",
+    "128": "icons/128x128.png"
   },
   "web_accessible_resources": [
     {
