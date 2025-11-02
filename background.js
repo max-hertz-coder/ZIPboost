@@ -4,7 +4,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   console.log('[ZIPboost] onInstalled:', details?.reason);
   if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
     // Открываем локальную Welcome Page (можете заменить на Tilda-URL позже)
-    chrome.tabs.create({ url: chrome.runtime.getURL('views/welcome.html') });
+    chrome.tabs.create({ url: 'https://max-hertz-coder.github.io/zipboost-welcome_page/'});
     // Если у вас будет Tilda-страница, поставьте:
     // chrome.tabs.create({ url: 'https://YOUR-TILDA-DOMAIN/welcome' });
   }
