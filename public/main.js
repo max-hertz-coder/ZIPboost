@@ -24,41 +24,6 @@ async function saveState(statePatch = {}) {
   const cur = (await storageGet(['zipboost_state'])).zipboost_state || {};
   const next = { ...cur, ...statePatch };
   
-  // Сохраняем файлы для сжатия
-  if (filesToCompress.length > 0) {
-    const compressFiles = [];
-    for (const f of filesToCompress) {
-      try {
-        const ab = await f.arrayBuffer();
-        compressFiles.push({
-          name: f.name,
-          type: f.type,
-          data: Array.from(new Uint8Array(ab))
-        });
-      } catch (e) {
-        console.warn('Failed to serialize file:', f.name, e);
-      }
-    }
-    next.compressFiles = compressFiles;
-  }
-  
-  // Сохраняем архив (ZIP blob) - только если это File объект
-  if (currentZipJS && currentArchiveFile && currentArchiveFile instanceof File) {
-    try {
-      const ab = await currentArchiveFile.arrayBuffer();
-      next.currentZipData = Array.from(new Uint8Array(ab));
-      next.currentZipName = currentArchiveFile.name;
-      next.currentArchiveEntries = currentArchiveEntries || Object.keys(currentZipJS.files);
-    } catch (e) {
-      console.warn('Failed to serialize archive:', e);
-    }
-  } else if (!currentZipJS && !currentArchiveFile) {
-    // Очищаем данные архива если его нет
-    next.currentZipData = null;
-    next.currentZipName = null;
-    next.currentArchiveEntries = null;
-  }
-  
   // Сохраняем активную вкладку
   const tabCompress = $('#tab-compress');
   const secCompress = $('#sec-compress');
@@ -68,9 +33,7 @@ async function saveState(statePatch = {}) {
   
   // Сохраняем настройки сжатия
   const nameInput = $('#zip-name');
-  const presetSel = $('#zip-preset');
   if (nameInput) next.zipName = nameInput.value;
-  if (presetSel) next.preset = presetSel.value;
   
   await storageSet({ zipboost_state: next });
   return next;
@@ -78,39 +41,6 @@ async function saveState(statePatch = {}) {
 
 async function loadState() {
   const res = (await storageGet(['zipboost_state'])).zipboost_state || null;
-  if (!res) return null;
-  
-  // Восстанавливаем файлы для сжатия
-  if (res.compressFiles?.length) {
-    try {
-      filesToCompress = res.compressFiles.map(f => 
-        new File([new Uint8Array(f.data)], f.name, { type: f.type })
-      );
-    } catch (e) {
-      console.warn('Failed to restore compress files:', e);
-      filesToCompress = [];
-    }
-  }
-  
-  // Восстанавливаем архив
-  if (res.currentZipData && res.currentZipName) {
-    try {
-      const u8 = new Uint8Array(res.currentZipData);
-      const blob = new Blob([u8], { type: 'application/zip' });
-      currentArchiveFile = new File([blob], res.currentZipName, { type: 'application/zip' });
-      currentArchiveEntries = res.currentArchiveEntries;
-      
-      // Перезагружаем ZIP из blob
-      if (typeof JSZip !== 'undefined') {
-        currentZipJS = await JSZip.loadAsync(u8);
-      }
-    } catch (e) {
-      console.warn('Failed to restore archive:', e);
-      currentArchiveFile = null;
-      currentZipJS = null;
-    }
-  }
-  
   return res;
 }
 
@@ -138,9 +68,7 @@ async function restoreState() {
   
   // Восстанавливаем настройки сжатия
   const nameInput = $('#zip-name');
-  const presetSel = $('#zip-preset');
   if (nameInput && state.zipName) nameInput.value = state.zipName;
-  if (presetSel && state.preset) presetSel.value = state.preset;
   
   // Восстанавливаем архив если он был открыт
   if (window._restoreArchive) {
@@ -172,12 +100,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('visibilitychange', async () => {
     if (document.hidden) {
       await saveState();
+      resetVolatileBuffers();
     }
   });
   
   // Периодическое сохранение (на случай если visibilitychange не сработает)
   setInterval(() => saveState(), 3000);
 });
+
+function resetVolatileBuffers() {
+  filesToCompress = [];
+  currentArchiveFile = null;
+  currentZipJS = null;
+  currentArchiveEntries = null;
+}
 
 // ---------- Tabs ----------
 function bindTabs() {
@@ -293,7 +229,6 @@ function bindCompressUI() {
   const btn = $('#btn-compress');
 
   const nameInput = $('#zip-name');
-  const presetSel = $('#zip-preset');
 
   // DnD
   dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag-over'); });
@@ -351,15 +286,11 @@ function bindCompressUI() {
   if (nameInput) {
     nameInput.addEventListener('input', () => saveState());
   }
-  if (presetSel) {
-    presetSel.addEventListener('change', () => saveState());
-  }
-
   btn.addEventListener('click', async () => {
     if (!filesToCompress.length) {
       alert('No files selected.'); return;
     }
-    const level = ({quick:1, optimal:6, maximum:9})[presetSel.value] ?? 6;
+    const level = 6; // balanced default compression
     const outName = (nameInput.value || 'archive.zip').replace(/[\/\\:*?"<>|]/g, '_');
 
     btn.disabled = true;
