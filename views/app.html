@@ -7,24 +7,12 @@
 
   <!-- Styles -->
   <link rel="stylesheet" href="../public/style.css">
-
-  <!-- Localize.camp (авто-детект языка браузера, 30+ языков) -->
-  <script src="https://global.localizecdn.com/localize.js"></script>
-  <script>
-    try {
-      Localize.initialize({
-        key: 'rehKq6Y5KctfYobc0ZDkww==',
-        // Авто-детект и запоминание
-        rememberLanguage: true
-      });
-    } catch(e) { console.warn('Localize init failed:', e); }
-  </script>
 </head>
 <body>
   <header class="topbar">
     <nav class="tabs">
-      <button type="button" id="tab-compress" class="tab active" data-localize="tab_compress">Compress</button>
-      <button type="button" id="tab-view" class="tab" data-localize="tab_view">View</button>
+      <button type="button" id="tab-compress" class="tab active">Compress</button>
+      <button type="button" id="tab-view" class="tab">Uncompress</button>
     </nav>
 
     <!-- Переключатель темы -->
@@ -39,11 +27,11 @@
   <main class="container">
     <!-- COMPRESS -->
     <section id="sec-compress" class="card active">
-      <h2 data-localize="compress_title">Compress files</h2>
+      <h2>Compress files</h2>
 
       <div id="dz-compress" class="dropzone" tabindex="0">
-        <div class="dz-title" data-localize="compress_dz_title">Drop files here or click to select</div>
-        <div class="dz-sub" data-localize="compress_dz_sub">Choose files from your computer</div>
+        <div class="dz-title">Drop files here or click to select</div>
+        <div class="dz-sub">Choose files from your computer</div>
         <!-- Скрытый input для выбора файлов -->
         <input id="inp-compress" type="file" multiple hidden />
       </div>
@@ -51,34 +39,34 @@
       <div id="list-compress" class="list"></div>
 
       <div class="row">
-        <label class="label" for="zip-name" data-localize="zip_name">ZIP name</label>
+        <label class="label" for="zip-name">ZIP name</label>
         <input id="zip-name" type="text" value="archive.zip" />
       </div>
 
       <!-- Compression level selector removed for simpler UX -->
 
       <div class="actions">
-        <button type="button" id="btn-compress" class="primary" data-localize="btn_compress">Create Zip File</button>
+        <button type="button" id="btn-compress" class="primary">Create Zip File</button>
         <div id="progress" class="progress"></div>
         <div id="lib-status" class="meta"></div>
       </div>
     </section>
 
-    <!-- VIEW / EXTRACT -->
+    <!-- UNCOMPRESS / EXTRACT -->
     <section id="sec-view" class="card">
-      <h2 data-localize="view_title">View ZIP File</h2>
+      <h2>Uncompress ZIP File</h2>
 
       <div id="dz-view" class="dropzone" tabindex="0">
-        <div class="dz-title" data-localize="view_dz_title">Drop ZIP file here or click to select</div>
-        <div class="dz-sub" data-localize="view_dz_sub">Choose archive file from your computer</div>
+        <div class="dz-title">Drop ZIP file here or click to select</div>
+        <div class="dz-sub">Choose archive file from your computer</div>
         <!-- Скрытый input для выбора архива -->
         <input id="inp-zip" type="file" accept=".zip,.rar,.7z,.tar,.tar.gz,.tgz" hidden />
       </div>
 
       <div class="row">
-        <button type="button" id="btn-extract-all" class="secondary" data-localize="btn_extract_all">Download all</button>
-        <button type="button" id="btn-reopen-zip" class="primary" style="display:none" data-localize="btn_reopen">Reopen</button>
-        <button type="button" id="btn-clear-state" class="secondary" data-localize="btn_clear">Clear</button>
+        <button type="button" id="btn-extract-all" class="secondary">Download all</button>
+        <button type="button" id="btn-reopen-zip" class="primary" style="display:none">Reopen</button>
+        <button type="button" id="btn-clear-state" class="secondary">Clear</button>
       </div>
 
       <div id="zip-meta" class="meta"></div>

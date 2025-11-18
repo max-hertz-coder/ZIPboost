@@ -1,8 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Create Zip FIle",
-  "version": "2.4.0",
-  "description": "Compress, view and extract ZIP/RAR/7Z/TAR locally in Chrome. Drag & drop or choose files.",
+  "version": "2.5.0",
+  "name": "Create Zip File",
+  "description": "Compress, view and extract ZIP/RAR/7Z/TAR archives locally in Chrome. Drag & drop or choose files.",
+  "icons": {
+    "16": "icons/16x16.png",
+    "48": "icons/48x48.png",
+    "128": "icons/128x128.png"
+  },
   "action": {
     "default_title": "Create Zip FIle",
     "default_popup": "views/app.html"
@@ -19,11 +24,6 @@
   "host_permissions": [
     "<all_urls>"
   ],
-  "icons": {
-    "16": "icons/16x16.png",
-    "48": "icons/48x48.png",
-    "128": "icons/128x128.png"
-  },
   "web_accessible_resources": [
     {
       "resources": [

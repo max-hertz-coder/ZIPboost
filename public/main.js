@@ -14,6 +14,7 @@ let currentZipJS = null; // JSZip instance for ZIP view
 let filesToCompress = [];
 let currentArchiveName = null;
 let currentArchiveEntries = null;
+let downloadQueue = [];
 
 // ---------- Storage helpers ----------
 const storageGet = (keys) => new Promise(r => chrome.storage?.local.get(keys, r));
@@ -113,6 +114,7 @@ function resetVolatileBuffers() {
   currentArchiveFile = null;
   currentZipJS = null;
   currentArchiveEntries = null;
+  downloadQueue = [];
 }
 
 // ---------- Tabs ----------
@@ -236,7 +238,8 @@ function bindCompressUI() {
   dz.addEventListener('drop', async (e) => {
     e.preventDefault(); dz.classList.remove('drag-over');
     if (e.dataTransfer.files?.length) {
-      filesToCompress = Array.from(e.dataTransfer.files);
+      const added = Array.from(e.dataTransfer.files);
+      filesToCompress = filesToCompress.concat(added);
       renderCompressList();
       await saveState();
     }
@@ -244,7 +247,8 @@ function bindCompressUI() {
   dz.addEventListener('click', () => inp.click());
   inp.addEventListener('change', async () => {
     if (inp.files?.length) {
-      filesToCompress = Array.from(inp.files);
+      const added = Array.from(inp.files);
+      filesToCompress = filesToCompress.concat(added);
       renderCompressList();
       await saveState();
     }
@@ -346,6 +350,7 @@ function bindViewUI() {
     currentArchiveFile = null; 
     currentZipJS = null;
     currentArchiveEntries = null;
+    downloadQueue = [];
     await storageSet({ zipboost_state: null });
   });
 
@@ -383,6 +388,7 @@ function bindViewUI() {
   async function openArchive(file) {
     currentArchiveFile = file;
     meta.textContent = `Archive: ${file.name} — ${fmt(file.size)}`;
+    downloadQueue = [];
     list.innerHTML = '';
 
     if (isZipName(file.name)) {
@@ -390,7 +396,12 @@ function bindViewUI() {
       const ab = await file.arrayBuffer();
       currentZipJS = await JSZip.loadAsync(ab);
       currentArchiveEntries = Object.keys(currentZipJS.files);
-      renderZipEntriesJSZip(currentZipJS);
+      downloadQueue = currentArchiveEntries.filter((name) => {
+        const entry = currentZipJS.files[name];
+        return entry && !entry.dir;
+      });
+      renderDownloadQueue();
+      updateMetaSummary();
       await saveState();
       return;
     }
@@ -403,7 +414,9 @@ function bindViewUI() {
       const archive = await archiveAPI.open(file);
       const filesObj = await archive.getFilesObject(); // map: name -> CompressedFile
       currentArchiveEntries = Object.keys(filesObj);
-      renderArchiveEntries(filesObj);
+      downloadQueue = currentArchiveEntries.filter((name) => !name.endsWith('/'));
+      renderDownloadQueue();
+      updateMetaSummary();
       await saveState();
       return;
     }
@@ -416,7 +429,7 @@ function bindViewUI() {
     if (currentZipJS && currentArchiveFile) {
       if (isZipName(currentArchiveFile.name)) {
         meta.textContent = `Archive: ${currentArchiveFile.name} — ${fmt(currentArchiveFile.size)}`;
-        renderZipEntriesJSZip(currentZipJS);
+        renderDownloadQueue();
       }
     }
   };
@@ -424,186 +437,65 @@ function bindViewUI() {
   // Сохраняем функцию для вызова после загрузки состояния
   window._restoreArchive = restoreArchive;
 
-  function renderZipEntriesJSZip(zip) {
+  function renderDownloadQueue() {
     list.innerHTML = '';
-    Object.entries(zip.files).forEach(([path, entry]) => {
-      if (entry.dir) return;
+    if (!downloadQueue.length) {
+      list.innerHTML = `<div class="meta">No files selected. Use Reopen to reload the archive.</div>`;
+      return;
+    }
+    downloadQueue.forEach((path) => {
       const row = document.createElement('div');
       row.className = 'item file';
-      const size = entry._data ? fmt(entry._data.uncompressedSize||0) : '';
       row.innerHTML = `
-        <div class="name">${path}</div>
-        <div class="meta">${size}</div>
+        <div class="name" title="${path}">${path}</div>
+        <div class="meta">${getEntrySize(path)}</div>
         <div class="file-actions">
-          <button class="secondary xs file-open" data-path="${path}" title="Open in browser">Open</button>
-          <button class="secondary xs file-dl" data-path="${path}" title="Download file">Download</button>
+          <button class="secondary xs file-remove" data-path="${path}" title="Remove">✕</button>
         </div>`;
       list.appendChild(row);
     });
-    
-    // Обработчик для кнопки Open
-    $$('.file-actions .file-open', list).forEach(btn => {
-      btn.addEventListener('click', async () => {
+
+    $$('.file-remove', list).forEach(btn => {
+      btn.addEventListener('click', () => {
         const path = btn.dataset.path;
-        const entry = currentZipJS.files[path];
-        if (!entry) return;
-        try {
-          const ext = (path.split('.').pop()||'').toLowerCase();
-          const mime = getMimeType(path);
-          
-          // Текстовые файлы - создаем HTML страницу с содержимым
-          const textExts = ['txt','md','csv','json','js','css','html','htm','xml','log','ini','bat','sh','ps1','py','java','cpp','c','h','php','rb','go','rs','ts','tsx','jsx','yaml','yml','toml','cfg','conf','sql','xml','svg'];
-          if (textExts.includes(ext) || mime.startsWith('text/') || mime === 'application/json' || mime === 'application/xml' || mime === 'text/xml') {
-            const text = await entry.async('string');
-            const w = window.open('', '_blank');
-            if (w) {
-              const escaped = escapeHTML(text);
-              w.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                  <meta charset="utf-8">
-                  <title>${path}</title>
-                  <style>
-                    body { font-family: monospace; padding: 20px; background: #fff; color: #000; line-height: 1.6; }
-                    @media (prefers-color-scheme: dark) { body { background: #1e1e1e; color: #d4d4d4; } }
-                    pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; }
-                  </style>
-                </head>
-                <body><pre>${escaped}</pre></body>
-                </html>
-              `);
-              w.document.close();
-            }
-            return;
-          }
-          
-          // Изображения - открываем через blob URL
-          if (['png','jpg','jpeg','gif','bmp','webp','svg','ico','tiff'].includes(ext) || mime.startsWith('image/')) {
-            const blob = await entry.async('blob');
-            const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
-            setTimeout(() => URL.revokeObjectURL(url), 8000);
-            return;
-          }
-          
-          // PDF и документы Office - открываем через blob URL
-          if (mime === 'application/pdf' || mime.startsWith('application/vnd.') || mime === 'application/msword') {
-            const blob = await entry.async('blob');
-            const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
-            setTimeout(() => URL.revokeObjectURL(url), 10000);
-            return;
-          }
-          
-          // Остальные - скачиваем
-          const blob = await entry.async('blob');
-          await saveBlob(blob, path);
-        } catch (err) {
-          console.error('Open error:', err);
-          alert('Failed to open file: ' + err.message);
-        }
-      });
-    });
-    
-    // Обработчик для кнопки Download
-    $$('.file-actions .file-dl', list).forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const path = btn.dataset.path;
-        const entry = currentZipJS.files[path];
-        if (!entry) return;
-        try {
-          const blob = await entry.async('blob');
-          const safePath = path.replace(/^\/+/, "").replace(/\\/g, "/");
-          await saveBlob(blob, safePath);
-        } catch (err) {
-          console.error('Download error:', err);
-          alert('Failed to download file: ' + err.message);
-        }
+        downloadQueue = downloadQueue.filter((p) => p !== path);
+        renderDownloadQueue();
+        updateMetaSummary();
       });
     });
   }
 
-  function renderArchiveEntries(filesObj) {
-    list.innerHTML = '';
-    Object.keys(filesObj).forEach((name) => {
-      const row = document.createElement('div');
-      row.className = 'item file';
-      row.innerHTML = `
-        <div class="name">${name}</div>
-        <div class="meta"></div>
-        <div class="file-actions">
-          <button class="secondary xs file-open" data-name="${name}" title="Open in browser">Open</button>
-          <button class="secondary xs file-dl" data-name="${name}" title="Download file">Download</button>
-        </div>`;
-      list.appendChild(row);
-    });
+  function updateMetaSummary() {
+    if (!meta) return;
+    if (!currentArchiveFile) {
+      meta.textContent = '';
+      return;
+    }
+    const base = `Archive: ${currentArchiveFile.name} — ${fmt(currentArchiveFile.size)}`;
+    const extra = `${downloadQueue.length} file${downloadQueue.length === 1 ? '' : 's'} selected`;
+    meta.textContent = `${base} • ${extra}`;
+  }
 
-    // Обработчик для кнопки Open
-    $$('.file-actions .file-open', list).forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const name = btn.dataset.name;
-        const cf = filesObj[name]; // CompressedFile
-        try {
-          const file = await cf.extract(); // returns File(Blob)
-          await openOrSaveByType(file, name);
-        } catch (e) {
-          if (String(e).toLowerCase().includes('encrypted')) {
-            const pwd = prompt('Archive is encrypted. Enter password:');
-            if (pwd) {
-              try {
-                const arch = await archiveAPI.open(currentArchiveFile);
-                arch.usePassword(pwd);
-                const ff = await arch.extractFiles();
-                const file2 = ff[name];
-                await openOrSaveByType(file2, name);
-              } catch (e2) { alert('Wrong password or cannot extract.'); }
-            }
-          } else {
-            console.error(e); alert('Cannot open this file.');
-          }
-        }
-      });
-    });
-    
-    // Обработчик для кнопки Download
-    $$('.file-actions .file-dl', list).forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const name = btn.dataset.name;
-        const cf = filesObj[name]; // CompressedFile
-        try {
-          const file = await cf.extract(); // returns File(Blob)
-          const safePath = name.replace(/^\/+/, "").replace(/\\/g, "/");
-          await saveBlob(file, safePath);
-        } catch (e) {
-          if (String(e).toLowerCase().includes('encrypted')) {
-            const pwd = prompt('Archive is encrypted. Enter password:');
-            if (pwd) {
-              try {
-                const arch = await archiveAPI.open(currentArchiveFile);
-                arch.usePassword(pwd);
-                const ff = await arch.extractFiles();
-                const file2 = ff[name];
-                const safePath = name.replace(/^\/+/, "").replace(/\\/g, "/");
-                await saveBlob(file2, safePath);
-              } catch (e2) { 
-                alert('Wrong password or cannot extract.'); 
-              }
-            }
-          } else {
-            console.error(e);
-            alert('Failed to download file: ' + (e.message || 'Unknown error'));
-          }
-        }
-      });
-    });
+  function getEntrySize(path) {
+    if (currentZipJS && currentZipJS.files?.[path]) {
+      const entry = currentZipJS.files[path];
+      if (entry._data && entry._data.uncompressedSize) {
+        return fmt(entry._data.uncompressedSize);
+      }
+      if (entry.uncompressedSize) return fmt(entry.uncompressedSize);
+    }
+    return '';
   }
 
   async function extractAll(file) {
+    if (!downloadQueue.length) {
+      alert('No files selected.'); return;
+    }
     if (isZipName(file.name) && currentZipJS) {
       // JSZip: iterate and save
-      const entries = Object.entries(currentZipJS.files).filter(([,e]) => !e.dir);
-      for (const [path, entry] of entries) {
+      for (const path of downloadQueue) {
+        const entry = currentZipJS.files[path];
+        if (!entry || entry.dir) continue;
         const blob = await entry.async('blob');
         const ok = await saveBlob(blob, path);
         if (!ok) showWarning('multi');
@@ -613,7 +505,9 @@ function bindViewUI() {
     if (isSupportedByArchive(file.name) && archiveAPI) {
       const arch = await archiveAPI.open(file);
       const map = await arch.extractFiles(); // { name: File }
-      for (const [name, outFile] of Object.entries(map)) {
+      for (const name of downloadQueue) {
+        const outFile = map[name];
+        if (!outFile) continue;
         const ok = await saveBlob(outFile, name);
         if (!ok) showWarning('multi');
       }
@@ -643,94 +537,6 @@ async function saveBlob(blobOrFile, filename) {
     console.warn('saveBlob failed', e);
     showWarning('multi'); return false;
   }
-}
-
-function getMimeType(name) {
-  const ext = (name.split('.').pop() || '').toLowerCase();
-  const m = {
-    // images
-    png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
-    webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', ico: 'image/x-icon', tiff: 'image/tiff',
-    // docs
-    pdf: 'application/pdf', doc: 'application/msword',
-    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    xls: 'application/vnd.ms-excel',
-    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ppt: 'application/vnd.ms-powerpoint',
-    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    // text/code
-    txt: 'text/plain', md: 'text/markdown', rtf: 'application/rtf',
-    html: 'text/html', htm: 'text/html', xml: 'text/xml',
-    css: 'text/css', js: 'text/javascript', json: 'application/json',
-    csv: 'text/csv', log: 'text/plain', ini: 'text/plain',
-    // archives
-    zip: 'application/zip', rar: 'application/x-rar-compressed',
-    '7z': 'application/x-7z-compressed', tar: 'application/x-tar',
-    gz: 'application/gzip', bz2: 'application/x-bzip2',
-    // av
-    mp3: 'audio/mpeg', wav: 'audio/wav', mp4: 'video/mp4', avi: 'video/x-msvideo',
-    mov: 'video/quicktime', wmv: 'video/x-ms-wmv',
-    // other
-    exe: 'application/x-msdownload', dll: 'application/x-msdownload',
-    bat: 'text/plain', sh: 'text/plain', ps1: 'text/plain'
-  };
-  return m[ext] || 'application/octet-stream';
-}
-
-async function openOrSaveByType(file, name) {
-  const ext = (name.split('.').pop() || '').toLowerCase();
-  const mime = file.type || getMimeType(name);
-  
-  // Текстовые файлы - создаем HTML страницу с содержимым
-  const textExts = ['txt','md','csv','json','js','css','html','htm','xml','log','ini','bat','sh','ps1','py','java','cpp','c','h','php','rb','go','rs','ts','tsx','jsx','yaml','yml','toml','cfg','conf','sql'];
-  if (textExts.includes(ext) || mime.startsWith('text/') || mime === 'application/json' || mime === 'application/xml' || mime === 'text/xml') {
-    const text = await file.text();
-    const w = window.open('', '_blank');
-    if (w) {
-      const escaped = escapeHTML(text);
-      w.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>${name}</title>
-          <style>
-            body { font-family: monospace; padding: 20px; background: #fff; color: #000; line-height: 1.6; }
-            @media (prefers-color-scheme: dark) { body { background: #1e1e1e; color: #d4d4d4; } }
-            pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; }
-          </style>
-        </head>
-        <body><pre>${escaped}</pre></body>
-        </html>
-      `);
-      w.document.close();
-    }
-    return;
-  }
-  
-  // Изображения - открываем через blob URL
-  if (['png','jpg','jpeg','gif','bmp','webp','svg','ico','tiff'].includes(ext) || mime.startsWith('image/')) {
-    const url = URL.createObjectURL(file);
-    window.open(url, '_blank');
-    setTimeout(() => URL.revokeObjectURL(url), 8000);
-    return;
-  }
-  
-  // PDF и документы Office - открываем через blob URL
-  if (mime === 'application/pdf' || mime.startsWith('application/vnd.') || mime === 'application/msword') {
-    const url = URL.createObjectURL(file);
-    window.open(url, '_blank');
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-    return;
-  }
-  
-  // Остальные - скачиваем
-  await saveBlob(file, name);
-}
-
-function escapeHTML(s) {
-  const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
-  return String(s).replace(/[&<>"']/g, ch => map[ch]);
 }
 
 // ---------- Listen background warnings ----------
