@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindTheme();
   bindCompressUI();
   bindViewUI();
+  bindRatingWidget();
   maybeInitLibArchive(); // try to init libarchive if bundled
   // Убрано сообщение о libarchive
   // $('#lib-status').textContent = archiveAPI ? 'libarchive: enabled' : 'libarchive: not found (ZIP only)';
@@ -164,6 +165,97 @@ function bindTheme() {
       icon.textContent = '🌙';
     }
   }
+}
+
+// ---------- Rating Widget ----------
+function bindRatingWidget() {
+  // TODO: Замените эту ссылку на вашу Google-форму для негативных отзывов (1-3 звезды)
+  const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSd2LnWqNaXblnEm_RmtTbo3hUBp4b54_QaAPTbnRMvPOp7ZUg/viewform?usp=publish-editor';
+  
+  // Получаем ID расширения для формирования ссылки на CWS
+  const extensionId = chrome.runtime.id;
+  const CWS_REVIEWS_URL = `https://chromewebstore.google.com/detail/${extensionId}/reviews`;
+  
+  const ratingLinks = $$('.rating-link');
+  const ratingGroup = $('.rating-group');
+  const ratingInputs = $$('input[name="rating"]');
+  
+  // Функция для выделения звезд слева направо
+  function highlightStars(upToRating) {
+    // Сначала снимаем все выделения
+    ratingLinks.forEach(link => link.classList.remove('active'));
+    
+    // Затем выделяем звезды слева направо до выбранной включительно
+    ratingLinks.forEach((link) => {
+      const linkRating = parseInt(link.dataset.rating, 10);
+      if (linkRating <= upToRating) {
+        link.classList.add('active');
+      }
+    });
+  }
+  
+  // Сброс выделения
+  function resetHighlight() {
+    const checkedRadio = $('input[name="rating"]:checked');
+    if (checkedRadio) {
+      const checkedRating = parseInt(checkedRadio.value, 10);
+      highlightStars(checkedRating);
+    } else {
+      ratingLinks.forEach(link => link.classList.remove('active'));
+    }
+  }
+  
+  // Слушаем изменения radio кнопок
+  ratingInputs.forEach(input => {
+    input.addEventListener('change', () => {
+      if (input.checked) {
+        const rating = parseInt(input.value, 10);
+        highlightStars(rating);
+      }
+    });
+  });
+  
+  // Обработка клика
+  ratingLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const rating = parseInt(link.dataset.rating, 10);
+      
+      // Выбираем соответствующий radio button
+      const radio = $(`#rating-${rating}`);
+      if (radio) {
+        radio.checked = true;
+        highlightStars(rating);
+      }
+      
+      // Редирект в зависимости от рейтинга
+      let targetUrl;
+      if (rating >= 4) {
+        // 4 или 5 звезд - редирект на страницу отзывов в CWS
+        targetUrl = CWS_REVIEWS_URL;
+      } else {
+        // 1, 2 или 3 звезды - редирект на Google-форму
+        targetUrl = GOOGLE_FORM_URL;
+      }
+      
+      // Открываем ссылку в новой вкладке
+      window.open(targetUrl, '_blank');
+    });
+    
+    // Обработка наведения
+    link.addEventListener('mouseenter', () => {
+      const rating = parseInt(link.dataset.rating, 10);
+      highlightStars(rating);
+    });
+  });
+  
+  // Сброс при уходе мыши
+  if (ratingGroup) {
+    ratingGroup.addEventListener('mouseleave', resetHighlight);
+  }
+  
+  // Инициализация при загрузке
+  resetHighlight();
 }
 
 // ---------- Helpers ----------

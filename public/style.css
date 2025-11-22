@@ -305,3 +305,67 @@ body.light .env-warnings {
 .env-warnings h4 { margin: 0 0 6px; font-size: 14px; }
 .env-warnings ul { margin: 6px 0 0 18px; }
 .env-warnings a { color: #60a5fa; text-decoration: underline; }
+
+/* ---------- Rating Widget ---------- */
+.rating-widget {
+  margin-top: 8px;
+  padding: 6px 0;
+}
+
+.rating-separator {
+  border: 0;
+  border-top: 3px solid var(--border);
+  opacity: 0.25;
+  margin: 0 0 6px 0;
+}
+
+.rating-text {
+  text-align: center;
+  font-family: arial, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  margin: 0 0 4px 0;
+}
+
+.full-stars {
+  text-align: center;
+}
+
+.full-stars .rating-group {
+  display: inline-flex;
+}
+
+.full-stars input {
+  position: absolute;
+  left: -9999px;
+}
+
+.full-stars label {
+  margin: 0;
+  cursor: pointer;
+}
+
+.full-stars label a {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.full-stars label a svg {
+  margin: 1px;
+  height: 22px;
+  width: 22px;
+  fill: #9ca3af;
+  transition: fill 0.3s;
+}
+
+.full-stars label a.active svg {
+  fill: #ffd700;
+}
+
+body.light .full-stars label a svg {
+  fill: #9ca3af;
+}
+
+body.light .full-stars label a.active svg {
+  fill: #ffd700;
+}
