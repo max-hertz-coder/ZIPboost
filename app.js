@@ -5,7 +5,7 @@
 // ---------- Helpers ----------
 const $  = (sel, root=document) => root.querySelector(sel);
 const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
-const on = (el, ev, fn, opts) => el.addEventListener(ev, fn, opts);
+const on = (el, ev, fn, opts) => el && el.addEventListener(ev, fn, opts);
 
 const fmt = (bytes) =>
   bytes < 1024 ? `${bytes} B` :
@@ -15,108 +15,85 @@ const fmt = (bytes) =>
 
 const sanitizeName = (s) => (s || "archive.zip").replace(/[\/\\:*?"<>|]/g, "_");
 
+// Filter out macOS metadata files (__MACOSX folders and ._ resource fork files)
+const isMacOSMetadata = (path) => {
+  const name = path.split('/').pop() || path;
+  return path.startsWith('__MACOSX/') || path.includes('/__MACOSX/') || name.startsWith('._');
+};
+
 const extMime = (name) => {
   const ext = (name.split(".").pop() || "").toLowerCase();
   const m = {
-    // images
+    // Images
     png:"image/png", jpg:"image/jpeg", jpeg:"image/jpeg", gif:"image/gif",
-    webp:"image/webp", svg:"image/svg+xml", bmp:"image/bmp", ico:"image/x-icon", tiff:"image/tiff",
-    // docs
+    webp:"image/webp", svg:"image/svg+xml", bmp:"image/bmp", ico:"image/x-icon",
+    tiff:"image/tiff", tif:"image/tiff", heic:"image/heic", heif:"image/heif",
+
+    // Documents
     pdf:"application/pdf", doc:"application/msword",
     docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     xls:"application/vnd.ms-excel",
     xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ppt:"application/vnd.ms-powerpoint",
     pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    // text/code
+    odt:"application/vnd.oasis.opendocument.text",
+    ods:"application/vnd.oasis.opendocument.spreadsheet",
+    odp:"application/vnd.oasis.opendocument.presentation",
+
+    // Text
     txt:"text/plain", md:"text/markdown", rtf:"application/rtf",
     html:"text/html", htm:"text/html", xml:"text/xml",
     css:"text/css", js:"text/javascript", json:"application/json",
     csv:"text/csv", log:"text/plain", ini:"text/plain",
-    // archives
+
+    // Archives
     zip:"application/zip", rar:"application/x-rar-compressed",
     "7z":"application/x-7z-compressed", tar:"application/x-tar",
-    gz:"application/gzip", bz2:"application/x-bzip2",
-    // av
-    mp3:"audio/mpeg", wav:"audio/wav", mp4:"video/mp4", avi:"video/x-msvideo",
-    mov:"video/quicktime", wmv:"video/x-ms-wmv",
-    // other
+    gz:"application/gzip", bz2:"application/x-bzip2", xz:"application/x-xz",
+
+    // Audio
+    mp3:"audio/mpeg", wav:"audio/wav", ogg:"audio/ogg", m4a:"audio/mp4",
+    flac:"audio/flac", aac:"audio/aac", wma:"audio/x-ms-wma",
+
+    // Video
+    mp4:"video/mp4", avi:"video/x-msvideo", mov:"video/quicktime",
+    wmv:"video/x-ms-wmv", flv:"video/x-flv", mkv:"video/x-matroska",
+    webm:"video/webm", m4v:"video/x-m4v", mpeg:"video/mpeg", mpg:"video/mpeg",
+
+    // Programming
+    py:"text/x-python", java:"text/x-java", cpp:"text/x-c++src", c:"text/x-csrc",
+    h:"text/x-chdr", hpp:"text/x-c++hdr", cs:"text/x-csharp", php:"text/x-php",
+    rb:"text/x-ruby", go:"text/x-go", rs:"text/x-rust", swift:"text/x-swift",
+    kt:"text/x-kotlin", ts:"text/typescript", tsx:"text/tsx", jsx:"text/jsx",
+
+    // Executables & System
     exe:"application/x-msdownload", dll:"application/x-msdownload",
-    bat:"text/plain", sh:"text/plain", ps1:"text/plain"
+    dmg:"application/x-apple-diskimage", app:"application/x-apple-app",
+    deb:"application/x-debian-package", rpm:"application/x-rpm",
+    bat:"application/bat", sh:"application/x-sh", ps1:"application/x-powershell",
+
+    // Fonts
+    ttf:"font/ttf", otf:"font/otf", woff:"font/woff", woff2:"font/woff2",
+
+    // Other
+    apk:"application/vnd.android.package-archive",
+    iso:"application/x-iso9660-image",
+    sqlite:"application/x-sqlite3", db:"application/x-sqlite3"
   };
   return m[ext] || "application/octet-stream";
 };
 
-const canOpenInBrowser = (mime) => {
-  const allow = [
-    "image/", "text/", "application/pdf", "application/json",
-    "application/xml", "text/xml", "application/javascript", "text/javascript"
-  ];
-  return allow.some(p => mime.startsWith(p));
-};
-
-// Safe Chrome API detection and fallbacks for web context
-const HAS_CHROME = typeof chrome === "object" && chrome && chrome.storage && chrome.storage.local;
-
-const storageGet = async (keys) => {
-  if (HAS_CHROME) return await new Promise(r => chrome.storage.local.get(keys, r));
-  // Fallback to localStorage
-  const out = {};
-  for (const k of Array.isArray(keys) ? keys : [keys]) {
-    try {
-      const raw = localStorage.getItem(k);
-      out[k] = raw ? JSON.parse(raw) : undefined;
-    } catch { out[k] = undefined; }
-  }
-  return out;
-};
-
-const storageSet = async (obj) => {
-  if (HAS_CHROME) return await new Promise(r => chrome.storage.local.set(obj, r));
-  Object.entries(obj || {}).forEach(([k, v]) => {
-    try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
-  });
-};
-
-function safeDownload(url, filename) {
-  if (typeof chrome === "object" && chrome?.downloads?.download) {
-    chrome.downloads.download({ url, filename, conflictAction: "uniquify", saveAs: false }, () => {});
-  } else {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename || "download";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-}
-
-async function fetchUrlData(url) {
-  // Try background fetch via extension if available
-  if (typeof chrome === "object" && chrome?.runtime?.sendMessage) {
-    try {
-      const resp = await new Promise(res => chrome.runtime.sendMessage({ type: "FETCH_URL", url }, res));
-      if (resp?.ok) return resp;
-    } catch {}
-  }
-  // Fallback: direct fetch
-  const r = await fetch(url);
-  const buffer = await r.arrayBuffer();
-  const mime = r.headers.get("content-type") || "application/octet-stream";
-  const nameGuess = (() => { try { return new URL(url).pathname.split("/").pop() || "file"; } catch { return "file"; } })();
-  return { ok: true, buffer, mime, name: nameGuess };
-}
+const storageGet = (keys) => new Promise(r => chrome.storage.local.get(keys, r));
+const storageSet = (obj)  => new Promise(r => chrome.storage.local.set(obj, r));
 
 // ---------- Shared state ----------
 let JSZIP_OK = false;
 
 // ---------- Persist / Restore ----------
 async function saveStateFull(statePatch = {}) {
-  // читаем текущее
   const cur = (await storageGet(["zipboost_state"])).zipboost_state || {};
   const next = { ...cur, ...statePatch };
 
-  // если есть Blob, сериализуем
   if (next.currentZipBlob instanceof Blob) {
     const ab = await next.currentZipBlob.arrayBuffer();
     next.currentZipData = Array.from(new Uint8Array(ab));
@@ -152,8 +129,6 @@ function ensureButton(button) {
 // ============================================================================
 const tabC = $("#tab-compress");
 const tabV = $("#tab-view");
-const btnTheme = $("#btn-theme-toggle");
-const themeIcon = btnTheme?.querySelector(".theme-icon");
 
 const secC = $("#sec-compress");
 const secV = $("#sec-view");
@@ -181,6 +156,134 @@ let files = [];                // для Compress
 let currentZip = null;         // для View
 let currentZipName = "archive.zip";
 
+// ===================== Merge & de-dup for Compress ==========================
+const fileKey = (f) => `${f.name}::${f.size}::${f.lastModified||0}`;
+
+function addFiles(newList) {
+  const map = new Map(files.map(f => [fileKey(f), f]));
+  for (const f of newList) map.set(fileKey(f), f);
+  files = Array.from(map.values());
+}
+
+// ============================================================================
+//                            PLATFORM / PICKER HELPERS
+// ============================================================================
+
+async function getOS() {
+  try {
+    const info = await new Promise(res => chrome.runtime.getPlatformInfo(res));
+    return info?.os || 'unknown';
+  } catch { return 'unknown'; }
+}
+
+async function pickFilesWithSystemDialog(opts = { multiple: true, accept: [] }) {
+  // 1) Пробуем современный File System Access API — обычно не закрывает поп-ап
+  if (window.showOpenFilePicker) {
+    try {
+      const handles = await window.showOpenFilePicker({
+        multiple: !!opts.multiple,
+        types: opts.accept?.length ? [{ description: 'Files', accept: opts.accept }] : undefined
+      });
+      const files = await Promise.all(handles.map(h => h.getFile()));
+      return files;
+    } catch (e) {
+      // пользователь мог отменить; пробуем дальше
+    }
+  }
+  // 2) Фолбэк: обычный <input type=file> (может закрыть поп-ап на Linux)
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = !!opts.multiple;
+    if (opts.acceptExts) input.accept = opts.acceptExts;
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    document.body.appendChild(input);
+    input.addEventListener('change', () => {
+      const chosen = Array.from(input.files || []);
+      document.body.removeChild(input);
+      resolve(chosen);
+    }, { once: true });
+    input.click();
+  });
+}
+
+async function robustOpenPickerInPopup(kind /* 'compress' | 'view' */) {
+  const isCompress = kind === 'compress';
+
+  // Какие типы ожидаем
+  const accept = isCompress
+    ? { accept: [] } // любые файлы
+    : { accept: [{ 'application/zip': ['.zip'], 'application/x-rar-compressed':['.rar'], 'application/x-7z-compressed':['.7z'], 'application/x-tar':['.tar','.tgz','.tar.gz'] }] };
+
+  const os = await getOS();
+
+  // ШАГ A: сначала пробуем File System Access API (обычно безопасно)
+  try {
+    const files = await pickFilesWithSystemDialog({
+      multiple: isCompress,
+      accept: accept.accept,
+      acceptExts: isCompress ? '' : '.zip,.rar,.7z,.tar,.tar.gz,.tgz'
+    });
+    if (files && files.length) {
+      if (isCompress) {
+        addFiles(files);
+        renderCompressList();
+        await persistCompressState();
+      } else {
+        const f = files[0];
+        const ext = (f.name.split('.').pop() || '').toLowerCase();
+        if (ext !== 'zip') {
+          // для .rar/.7z/.tar — сразу сохраняем
+          const url = URL.createObjectURL(f);
+          chrome.downloads.download(
+            { url, filename: f.name, conflictAction: 'uniquify', saveAs: false },
+            () => setTimeout(() => URL.revokeObjectURL(url), 3000)
+          );
+        } else {
+          openZip(f);
+        }
+      }
+      return; // успех, поп-ап не закрыли
+    }
+  } catch (_) {}
+
+  // ШАГ B: если платформа проблемная (Linux) — открываем вкладку «Full View» и автозапускаем выбор там
+  if (os === 'linux') {
+    const hash = isCompress ? '#compress&autopick=1' : '#view&autopick=1';
+    chrome.tabs.create({ url: chrome.runtime.getURL('app.html' + hash) });
+    // закрываем текущий поп-ап — теперь работа продолжится во вкладке (она не закрывается)
+    window.close();
+    return;
+  }
+
+  // ШАГ C: в других случаях — пробуем ещё раз обычный input (на большинстве систем поп-ап остаётся)
+  const fallback = await pickFilesWithSystemDialog({
+    multiple: isCompress,
+    accept: accept.accept,
+    acceptExts: isCompress ? '' : '.zip,.rar,.7z,.tar,.tar.gz,.tgz'
+  });
+  if (fallback && fallback.length) {
+    if (isCompress) {
+      addFiles(fallback);
+      renderCompressList();
+      await persistCompressState();
+    } else {
+      const f = fallback[0];
+      const ext = (f.name.split('.').pop() || '').toLowerCase();
+      if (ext !== 'zip') {
+        const url = URL.createObjectURL(f);
+        chrome.downloads.download(
+          { url, filename: f.name, conflictAction: 'uniquify', saveAs: false },
+          () => setTimeout(() => URL.revokeObjectURL(url), 3000)
+        );
+      } else {
+        openZip(f);
+      }
+    }
+  }
+}
+
 // ============================================================================
 //                               INIT
 // ============================================================================
@@ -205,88 +308,41 @@ async function activate(section, tabBtn) {
 on(tabC, "click", () => activate(secC, tabC));
 on(tabV, "click", () => activate(secV, tabV));
 
-// ============================================================================
-//                               THEME TOGGLE
-// ============================================================================
-const THEMES = {
-  dark: { file: "dark-blue.css", icon: "🌙" },
-  light: { file: "light-blue.css", icon: "☀️" }
-};
-
-let currentTheme = "dark"; // default
-
-function getThemeLink() {
-  return document.querySelector('#theme-link') || document.querySelector('link[href*="/themes/"]');
-}
-
-async function initTheme() {
-  const saved = (await storageGet(["zipboost_theme"])).zipboost_theme;
-  if (saved && (saved === "dark" || saved === "light")) {
-    currentTheme = saved;
-  }
-  applyTheme(currentTheme, false);
-}
-
-function applyTheme(theme, save = true) {
-  currentTheme = theme;
-  const link = getThemeLink();
-  if (link) {
-    link.href = `../public/themes/${THEMES[theme].file}`;
-  } else {
-    // создаем ссылку если её нет
-    const newLink = document.createElement("link");
-    newLink.rel = "stylesheet";
-    newLink.href = `../public/themes/${THEMES[theme].file}`;
-    document.head.appendChild(newLink);
-  }
-  
-  if (themeIcon) {
-    themeIcon.textContent = THEMES[theme].icon;
-  }
-  
-  if (save) {
-    storageSet({ zipboost_theme: theme });
-  }
-}
-
-function toggleTheme() {
-  const next = currentTheme === "dark" ? "light" : "dark";
-  applyTheme(next);
-}
-
-if (btnTheme) {
-  ensureButton(btnTheme);
-  on(btnTheme, "click", toggleTheme);
-}
-
-// Инициализация темы при загрузке
-initTheme();
-
-// Восстановление «умолчаний» (имя архива/пресет)
+// Восстановление «умолчаний»
 (async () => {
   const { lastZipName, lastPreset } = await storageGet(["lastZipName", "lastPreset"]);
   zipName.value = lastZipName && !/\.tar$/i.test(lastZipName) ? lastZipName : "archive.zip";
   preset.value = lastPreset || "optimal";
 })();
 
-// Восстановление состояния обеих вкладок
+// Восстановление состояния обеих вкладок + автозапуск выбора в режиме Full View
 (async () => {
   const state = await loadStateFull();
-  const wantView = (location.hash || "").toLowerCase().includes("view");
+  const hash = (location.hash || "").toLowerCase();
+
+  const wantView = hash.includes("view");
+  const wantCompress = hash.includes("compress");
+
+  // если пришли во вкладку с автоподбором файлов
+  const autoPick = hash.includes("autopick=1");
 
   if (state?.activeTab === "view" || wantView) {
     await activate(secV, tabV);
-    // попытаться полностью восстановить ZIP
+    if (autoPick) {
+      // откроем выбор архива во вкладке (здесь поп-апа уже нет)
+      robustOpenPickerInPopup('view');
+      return;
+    }
     if (state?.currentZipBlob && state.currentZipName && state.entries) {
       try {
         currentZip = await JSZip.loadAsync(await state.currentZipBlob.arrayBuffer());
         currentZipName = state.currentZipName;
-        renderZipEntries(Object.keys(currentZip.files));
-        metaV.textContent = `${state.entries.length} entries in ${state.currentZipName}`;
+        const filteredEntries = Object.keys(currentZip.files).filter(path => !isMacOSMetadata(path));
+        renderZipEntries(filteredEntries);
+        metaV.textContent = `${filteredEntries.length} entries in ${state.currentZipName}`;
         btnReopen.style.display = "none";
         btnExtract.style.display = "inline-block";
       } catch {
-        // не получилось — показываем просьбу переоткрыть
         renderZipNeedsReopen(state);
       }
     } else if (state?.currentZipName && state.entries) {
@@ -294,7 +350,10 @@ initTheme();
     }
   } else {
     await activate(secC, tabC);
-    // восстановить список файлов Compress (если был)
+    if (autoPick) {
+      robustOpenPickerInPopup('compress');
+      return;
+    }
     if (state?.compressFiles?.length) {
       try {
         files = state.compressFiles.map(f => new File([new Uint8Array(f.data)], f.name, { type: f.type }));
@@ -322,7 +381,6 @@ function renderCompressList() {
     </div>
   `).join("");
 
-  // Удаление (только одного) файла
   $$(".item-remove", listC).forEach(btn => {
     ensureButton(btn);
     on(btn, "click", async (e) => {
@@ -338,7 +396,6 @@ function renderCompressList() {
   });
 }
 
-// сохранить текущее состояние Compress
 async function persistCompressState() {
   const pack = [];
   for (const f of files) {
@@ -366,7 +423,7 @@ on(dzC, "drop", async (e) => {
   const dt = e.dataTransfer;
   if (!dt) return;
   if (dt.files?.length) {
-    files.push(...Array.from(dt.files));
+    addFiles(Array.from(dt.files));
     renderCompressList();
     await persistCompressState();
     return;
@@ -374,12 +431,12 @@ on(dzC, "drop", async (e) => {
   const url = dt.getData("text/uri-list") || dt.getData("URL") || dt.getData("text/plain");
   if (url) {
     try {
-      const resp = await fetchUrlData(url);
+      const resp = await new Promise(res => chrome.runtime.sendMessage({ type: "FETCH_URL", url }, res));
       if (!resp?.ok) throw new Error(resp?.error || "Fetch error");
       const u8 = new Uint8Array(resp.buffer);
       const blob = new Blob([u8], { type: resp.mime || "application/octet-stream" });
       const file = new File([blob], resp.name || "file", { type: blob.type });
-      files.push(file);
+      addFiles([file]);
       renderCompressList();
       await persistCompressState();
     } catch (err) {
@@ -389,60 +446,27 @@ on(dzC, "drop", async (e) => {
   }
 });
 
-// open file dialog from zone - используем делегирование событий для надежности
-function setupFileInputClick() {
-  // Проверяем элементы
-  const dzC = $("#dz-compress");
-  const inC = $("#inp-compress");
-  
-  if (dzC && inC) {
-    dzC.addEventListener("click", function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      inC.click();
-    });
-  } else {
-    // Если элементы еще не найдены, используем делегирование от document
-    document.addEventListener("click", function(e) {
-      const target = e.target;
-      if (target && (target.id === "dz-compress" || (target.closest && target.closest("#dz-compress")))) {
-        e.preventDefault();
-        e.stopPropagation();
-        const input = $("#inp-compress");
-        if (input) input.click();
-      }
-    });
+// open file dialog from zone (устойчиво к закрытию поп-апа)
+on(dzC, "click", (e) => { e.preventDefault(); robustOpenPickerInPopup('compress'); });
+
+// input change (подхватываем, если он был вставлен скриптом-подпоркой)
+on(inC, "change", async () => {
+  const chosen = Array.from(inC.files || []);
+  if (chosen.length) {
+    addFiles(chosen);
+    renderCompressList();
+    await persistCompressState();
   }
-}
+  inC.value = "";
+});
 
-// Вызываем сразу и также при загрузке DOM
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', setupFileInputClick);
-} else {
-  setupFileInputClick();
-}
-
-// input change
-if (inC) {
-  on(inC, "change", async () => {
-    const chosen = Array.from(inC.files || []);
-    if (chosen.length) {
-      files = chosen;
-      renderCompressList();
-      await persistCompressState();
-    }
-    inC.value = "";
-  });
-}
-
-// compress -> zip -> download (download directly from popup!)
+// compress -> zip -> download
 ensureButton(btnZip);
 on(btnZip, "click", async (e) => {
   e.preventDefault(); e.stopPropagation();
   if (!JSZIP_OK) return alert("JSZip is not loaded.");
   if (!files.length) return alert("Add files first.");
 
-  // запомним настройки
   await storageSet({ lastZipName: zipName.value, lastPreset: preset.value });
 
   const level = preset.value === "quick" ? 1 : (preset.value === "maximum" ? 9 : 6);
@@ -461,10 +485,18 @@ on(btnZip, "click", async (e) => {
 
     const url = URL.createObjectURL(blob);
 
-    // Download via Chrome API if present, otherwise via anchor fallback
-    safeDownload(url, name);
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
-    progC.textContent = "ZIP saved.";
+    chrome.downloads.download(
+      { url, filename: name, conflictAction: "uniquify", saveAs: false },
+      (id) => {
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+        if (chrome.runtime.lastError) {
+          console.error("download error:", chrome.runtime.lastError.message);
+          alert("Chrome prevented the download. Check chrome://settings/downloads and allow downloads for extensions.");
+        } else {
+          progC.textContent = "ZIP saved to Downloads.";
+        }
+      }
+    );
   } catch (err) {
     console.error("Compression error:", err);
     alert("Compression failed: " + err.message);
@@ -473,7 +505,7 @@ on(btnZip, "click", async (e) => {
   }
 });
 
-// Сохранять состояние периодически, чтобы не потерять, если пользователь кликнул вне попапа
+// Сохраняем периодически
 setInterval(() => { if (secC.classList.contains("active")) persistCompressState(); }, 4000);
 
 // ============================================================================
@@ -483,11 +515,19 @@ function renderZipEntries(entries) {
   listV.innerHTML = entries.map(path => {
     const entry = currentZip.files[path];
     const label = entry.dir ? `[Folder] ${path}` : path;
-    const right = entry.dir ? "—" : "";
+    let right = "";
+    if (!entry.dir) {
+      let size = 0;
+      if (entry._data && entry._data.uncompressedSize) size = entry._data.uncompressedSize;
+      else if (entry.uncompressedSize)                  size = entry.uncompressedSize;
+      right = size > 0 ? fmt(size) : "";
+    } else {
+      right = "—";
+    }
     const buttons = entry.dir ? "" : `
       <div class="file-actions">
-        <button class="secondary xs file-open" data-path="${path}" title="Open" type="button">Open</button>
-        <button class="secondary xs file-dl"   data-path="${path}" title="Download" type="button">⬇</button>
+        <button class="secondary xs file-open" data-path="${path}" title="Open in browser" type="button">Open</button>
+        <button class="secondary xs file-dl"   data-path="${path}" title="Download file" type="button">Download</button>
       </div>`;
     return `<div class="item file" data-path="${path}">
       <div class="name" title="${path}">${label}</div>
@@ -496,7 +536,7 @@ function renderZipEntries(entries) {
     </div>`;
   }).join("");
 
-  // bind open/download
+  // open
   $$(".file-open", listV).forEach(btn => {
     ensureButton(btn);
     on(btn, "click", async (e) => {
@@ -507,16 +547,40 @@ function renderZipEntries(entries) {
       try {
         const ab = await entry.async("arraybuffer");
         const mime = extMime(path);
-        const blob = new Blob([ab], { type: mime });
-        const url = URL.createObjectURL(blob);
+        const ext = (path.split(".").pop() || "").toLowerCase();
 
-        if (canOpenInBrowser(mime)) {
+        const textExts = ['txt','md','csv','json','js','css','html','htm','xml','log','ini','bat','sh','ps1','py','java','cpp','c','h','php','rb','go','rs','ts','tsx','jsx','yaml','yml','toml','cfg','conf'];
+        if (textExts.includes(ext) || mime.startsWith("text/") || mime === "application/json" || mime === "application/xml" || mime === "text/xml") {
+          const text = new TextDecoder().decode(new Uint8Array(ab));
+          const w = window.open("", "_blank");
+          if (w) {
+            const esc = text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+            w.document.write(`
+              <!DOCTYPE html><html><head><meta charset="utf-8"><title>${path}</title>
+              <style>body{font-family:monospace;padding:20px;background:#fff;color:#000;line-height:1.6}
+              @media (prefers-color-scheme:dark){body{background:#1e1e1e;color:#d4d4d4}} pre{white-space:pre-wrap;margin:0}</style>
+              </head><body><pre>${esc}</pre></body></html>`);
+            w.document.close();
+          }
+          return;
+        }
+
+        if (mime.startsWith("image/") || mime === "application/pdf" || mime.startsWith("application/vnd.")) {
+          const blob = new Blob([ab], { type: mime });
+          const url = URL.createObjectURL(blob);
           window.open(url, "_blank");
           setTimeout(() => URL.revokeObjectURL(url), 10000);
-        } else {
-          safeDownload(url, path);
-          setTimeout(() => URL.revokeObjectURL(url), 3000);
+          return;
         }
+
+        const blob = new Blob([ab], { type: mime });
+        const url = URL.createObjectURL(blob);
+        // Ensure proper filename formatting and preserve extension
+        let safePath = path.replace(/^\/+/, "").replace(/\\/g, "/");
+        chrome.downloads.download(
+          { url, filename: safePath, conflictAction: "uniquify", saveAs: false },
+          () => setTimeout(() => URL.revokeObjectURL(url), 3000)
+        );
       } catch (err) {
         console.error("open error:", err);
         alert("Failed to open file: " + err.message);
@@ -524,6 +588,7 @@ function renderZipEntries(entries) {
     });
   });
 
+  // download
   $$(".file-dl", listV).forEach(btn => {
     ensureButton(btn);
     on(btn, "click", async (e) => {
@@ -535,8 +600,11 @@ function renderZipEntries(entries) {
         const ab = await entry.async("arraybuffer");
         const blob = new Blob([ab], { type: extMime(path) });
         const url = URL.createObjectURL(blob);
-        safeDownload(url, path);
-        setTimeout(() => URL.revokeObjectURL(url), 3000);
+        const safePath = path.replace(/^\/+/, "").replace(/\\/g, "/");
+        chrome.downloads.download(
+          { url, filename: safePath, conflictAction: "uniquify", saveAs: false },
+          () => setTimeout(() => URL.revokeObjectURL(url), 3000)
+        );
       } catch (err) {
         console.error("download error:", err);
         alert("Failed to download file: " + err.message);
@@ -546,18 +614,18 @@ function renderZipEntries(entries) {
 }
 
 function renderZipNeedsReopen(state) {
-  metaV.textContent = `Previously viewed: ${state.currentZipName} (${state.entries.length} entries)`;
+  const filteredEntries = (state.entries || []).filter(path => !isMacOSMetadata(path));
+  metaV.textContent = `Previously viewed: ${state.currentZipName} (${filteredEntries.length} entries)`;
   btnReopen.style.display = "inline-block";
   btnExtract.style.display = "none";
-
   listV.innerHTML = `
-    <div class="meta" style="padding:10px; background:#1f2937; border-radius:4px; margin-bottom:10px; border-left:4px solid #3b82f6;">
+    <div class="meta reopen-message">
       <strong>📁 ZIP needs to be reopened</strong><br>
       Click "Reopen ZIP" or drop "${state.currentZipName}" again.
     </div>
-    ${state.entries.map(p => `<div class="item file" style="opacity:.7; padding:8px; border-radius:4px; background:#0f172a; cursor:pointer;"><div class="name">${p}</div><div class="meta">reopen</div></div>`).join("")}
+    ${filteredEntries.map(p => `<div class="item file reopen-item"><div class="name">${p}</div><div class="meta">reopen</div></div>`).join("")}
   `;
-  $$(".item.file", listV).forEach(el => on(el, "click", () => inV.click()));
+  $$(".item.file", listV).forEach(el => on(el, "click", () => robustOpenPickerInPopup('view')));
 }
 
 // drag visuals for VIEW
@@ -574,74 +642,38 @@ on(dzV, "drop", async (e) => {
   if (!dt?.files?.length) return;
   const file = dt.files[0];
   const ext = (file.name.split(".").pop() || "").toLowerCase();
-  if (!["zip","rar","7z","tar"].includes(ext)) {
+  if (!["zip","rar","7z","tar","tgz"].includes(ext)) {
     alert("Please drop a supported archive: .zip, .rar, .7z, .tar");
     return;
   }
   if (ext !== "zip") {
-    alert(`.${ext} is not supported for inline viewing. Only ZIP can be opened. The file will be saved.`);
+    alert(`.${ext} is not supported for inline viewing. The file will be saved.`);
     const url = URL.createObjectURL(file);
-    safeDownload(url, file.name);
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    chrome.downloads.download({ url, filename: file.name, conflictAction: "uniquify", saveAs: false },
+      () => setTimeout(() => URL.revokeObjectURL(url), 3000));
     return;
   }
   openZip(file);
 });
 
-// click zone -> open file dialog для VIEW
-function setupZipInputClick() {
-  const dzV = $("#dz-view");
-  const inV = $("#inp-zip");
-  
-  if (dzV && inV) {
-    dzV.addEventListener("click", function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      inV.click();
-    });
-  } else {
-    // Делегирование если элементы не найдены
-    document.addEventListener("click", function(e) {
-      const target = e.target;
-      if (target && (target.id === "dz-view" || (target.closest && target.closest("#dz-view")))) {
-        e.preventDefault();
-        e.stopPropagation();
-        const input = $("#inp-zip");
-        if (input) input.click();
-      }
-    });
-  }
-}
+// click zone -> устойчивый выбор архива
+on(dzV, "click", (e) => { e.preventDefault(); robustOpenPickerInPopup('view'); });
 
-// Вызываем сразу и также при загрузке DOM
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', setupZipInputClick);
-} else {
-  setupZipInputClick();
-}
-
-// input change for VIEW
-if (inV) {
-  on(inV, "change", () => {
-    const f = inV.files?.[0];
-    if (f) {
-      const ext = (f.name.split(".").pop() || "").toLowerCase();
-      if (!["zip","rar","7z","tar"].includes(ext)) {
-        alert("Please choose a supported archive: .zip, .rar, .7z, .tar");
-        inV.value = "";
-        return;
-      }
-      if (ext !== "zip") {
-        const url = URL.createObjectURL(f);
-        safeDownload(url, f.name);
-        setTimeout(() => URL.revokeObjectURL(url), 3000);
-      } else {
-        openZip(f);
-      }
+// input change (если использовали скрытый input)
+on(inV, "change", () => {
+  const f = inV.files?.[0];
+  if (f) {
+    const ext = (f.name.split(".").pop() || "").toLowerCase();
+    if (ext !== "zip") {
+      const url = URL.createObjectURL(f);
+      chrome.downloads.download({ url, filename: f.name, conflictAction: "uniquify", saveAs: false },
+        () => setTimeout(() => URL.revokeObjectURL(url), 3000));
+    } else {
+      openZip(f);
     }
-    inV.value = "";
-  });
-}
+  }
+  inV.value = "";
+});
 
 // open ZIP with JSZip & render
 async function openZip(file) {
@@ -651,7 +683,8 @@ async function openZip(file) {
     currentZip = await JSZip.loadAsync(await file.arrayBuffer());
     currentZipName = file.name;
 
-    const entries = Object.keys(currentZip.files).sort();
+    const allEntries = Object.keys(currentZip.files).sort();
+    const entries = allEntries.filter(path => !isMacOSMetadata(path));
     renderZipEntries(entries);
     metaV.textContent = `${entries.length} entries in ${file.name}`;
     btnReopen.style.display = "none";
@@ -681,13 +714,31 @@ on(btnExtract, "click", async (e) => {
 
   for (const [name, entry] of Object.entries(currentZip.files)) {
     if (entry.dir) continue;
+    if (isMacOSMetadata(name)) continue; // Skip macOS metadata files
     try {
       const ab = await entry.async("arraybuffer");
-      const blob = new Blob([ab], { type: extMime(name) });
+      const mimeType = extMime(name);
+      const blob = new Blob([ab], { type: mimeType });
       const url = URL.createObjectURL(blob);
-      const safePath = name.split("\\").join("/");
-      safeDownload(url, `${base}/${safePath}`);
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
+
+      // Ensure proper file path formatting and preserve extension
+      let safePath = name.replace(/\\/g, "/").replace(/^\/+/, "");
+
+      // Make sure the filename has an extension
+      if (!safePath.includes(".") || safePath.lastIndexOf(".") < safePath.lastIndexOf("/")) {
+        // No extension or extension is in directory name, not filename
+        // Try to infer from MIME type
+        const ext = Object.entries({
+          "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif",
+          "application/pdf": "pdf", "text/plain": "txt"
+        }).find(([mime]) => mime === mimeType)?.[1];
+        if (ext) safePath += `.${ext}`;
+      }
+
+      chrome.downloads.download(
+        { url, filename: `${base}/${safePath}`, conflictAction: "uniquify", saveAs: false },
+        () => setTimeout(() => URL.revokeObjectURL(url), 3000)
+      );
       count++;
     } catch (err) {
       console.warn("Extract failed:", name, err);
@@ -698,7 +749,7 @@ on(btnExtract, "click", async (e) => {
 
 // Reopen
 ensureButton(btnReopen);
-on(btnReopen, "click", (e) => { e.preventDefault(); e.stopPropagation(); inV.click(); });
+on(btnReopen, "click", (e) => { e.preventDefault(); e.stopPropagation(); robustOpenPickerInPopup('view'); });
 
 // Clear (не переключаем вкладку!)
 ensureButton(btnClear);
@@ -720,10 +771,8 @@ on(btnClear, "click", async (e) => {
 });
 
 // ============================================================================
-//                          DIAGNOSTICS / TIPS (one-time)
+//                     Guard: prevent "click-through" inside popup
 // ============================================================================
-// Если вдруг скачивание блокируется политикой Chrome:
-// 1) Проверь, что у расширения есть permission "downloads" в manifest.json.
-// 2) Убедись, что скачивание вызывается из контекста popup (как здесь),
-//    а не через передачу blob: URL в background (service worker не видит blob: из popup).
-// 3) chrome://settings/downloads — проверь папку, авто-сохранение и отсутствие блокировок.
+['mousedown','mouseup','click'].forEach(ev =>
+  document.addEventListener(ev, e => e.stopPropagation(), true)
+);

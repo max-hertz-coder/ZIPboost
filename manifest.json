@@ -1,14 +1,21 @@
 {
   "manifest_version": 3,
-  "name": "ZIPboost — Zip Archiver & Viewer",
-  "version": "2.3.2",
-  "description": "Drag & drop to compress, view and extract ZIP files directly in Chrome.",
+  "version": "2.7.3",
+  "name": "__MSG_appName__",
+  "description": "__MSG_shortDesc__",
+  "default_locale": "en",
+  "icons": {
+    "16": "icons/16x16.png",
+    "48": "icons/48x48.png",
+    "128": "icons/128x128.png"
+  },
   "action": {
-    "default_title": "Open ZIPboost",
+    "default_title": "Create Zip FIle",
     "default_popup": "views/app.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "permissions": [
     "downloads",
@@ -18,15 +25,17 @@
   "host_permissions": [
     "<all_urls>"
   ],
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
   "web_accessible_resources": [
     {
-      "resources": [ "icons/*" ],
+      "resources": [
+        "icons/*",
+        "views/welcome.html",
+        "libs/libarchive/*"
+      ],
       "matches": [ "<all_urls>" ]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' blob: data:"
+  }
 }

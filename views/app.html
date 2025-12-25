@@ -2,73 +2,162 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ZIPboost</title>
+  <title>Create Zip FIle</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Подключаем стили -->
+
+  <!-- Styles -->
   <link rel="stylesheet" href="../public/style.css">
-  <link rel="stylesheet" href="../public/themes/dark-blue.css" id="theme-link">
+
+  <!-- Localize.camp (авто-детект языка браузера, 30+ языков) -->
+  <script src="https://global.localizecdn.com/localize.js"></script>
+  <script>
+    try {
+      Localize.initialize({
+        key: 'rehKq6Y5KctfYobc0ZDkww==',
+        // Авто-детект и запоминание
+        rememberLanguage: true
+      });
+    } catch(e) { console.warn('Localize init failed:', e); }
+  </script>
 </head>
 <body>
   <header class="topbar">
     <nav class="tabs">
-      <button type="button" id="tab-compress" class="tab active">Compress</button>
-      <button type="button" id="tab-view" class="tab">View</button>
+      <button type="button" id="tab-compress" class="tab active" data-localize="tab_compress">Compress</button>
+      <button type="button" id="tab-view" class="tab" data-localize="tab_view">View</button>
     </nav>
-    <button type="button" id="btn-theme-toggle" class="theme-toggle" title="Toggle theme">
-      <span class="theme-icon">🌙</span>
+
+    <!-- Переключатель темы -->
+    <button id="btn-theme" class="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+      <span id="theme-icon">🌙</span>
     </button>
   </header>
 
+  <!-- Предупреждения/инструкции по ограничениям браузера -->
+  <div id="env-warnings" class="env-warnings" hidden></div>
+
   <main class="container">
-    <!-- COMPRESS SECTION -->
+    <!-- COMPRESS -->
     <section id="sec-compress" class="card active">
-      <h2>Compress files</h2>
+      <h2 data-localize="compress_title">Compress files</h2>
+
       <div id="dz-compress" class="dropzone" tabindex="0">
-        <div class="dz-title">Drop files here or click to select</div>
-        <div class="dz-sub">Choose files from your computer or drag links/images</div>
+        <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <div class="dz-title" data-localize="compress_dz_title">Drop files here or click to select</div>
+        <div class="dz-sub" data-localize="compress_dz_sub">Choose files from your computer</div>
         <input id="inp-compress" type="file" multiple hidden />
       </div>
+
       <div id="list-compress" class="list"></div>
+
       <div class="row">
-        <label class="label">ZIP name</label>
+        <label class="label" for="zip-name" data-localize="zip_name">ZIP name</label>
         <input id="zip-name" type="text" value="archive.zip" />
       </div>
+
       <div class="field-group">
-        <label class="field-label">Compression level</label>
+        <label class="field-label" for="zip-preset" data-localize="compression_level">Compression level</label>
         <select id="zip-preset" title="Preset affects speed and resulting ZIP size">
-          <option value="quick">Quick — fastest (bigger)</option>
-          <option value="optimal" selected>Optimal — balanced</option>
-          <option value="maximum">Maximum — smallest (slower)</option>
+          <option value="quick" data-localize="preset_quick">Quick — fastest (bigger)</option>
+          <option value="optimal" selected data-localize="preset_optimal">Optimal — balanced</option>
+          <option value="maximum" data-localize="preset_maximum">Maximum — smallest (slower)</option>
         </select>
-        <div class="hint">Compression level affects speed &amp; result size</div>
+        <div class="hint" data-localize="compression_hint">Compression level affects speed &amp; result size</div>
       </div>
+
       <div class="actions">
-        <button type="button" id="btn-compress" class="primary">Compress to ZIP</button>
+        <button type="button" id="btn-compress" class="primary" data-localize="btn_compress">Create Zip File</button>
         <div id="progress" class="progress"></div>
         <div id="lib-status" class="meta"></div>
       </div>
     </section>
 
-    <!-- VIEW SECTION -->
+    <!-- VIEW / EXTRACT -->
     <section id="sec-view" class="card">
-      <h2>View / Extract ZIP</h2>
+      <h2 data-localize="view_title">View ZIP File</h2>
+
       <div id="dz-view" class="dropzone" tabindex="0">
-        <div class="dz-title">Drop ZIP/RAR/7Z/TAR here or click to select</div>
-        <div class="dz-sub">Choose archive file from your computer</div>
-        <input id="inp-zip" type="file" accept=".zip,.rar,.7z,.tar" hidden />
+        <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          <line x1="12" y1="11" x2="12" y2="17"/>
+          <line x1="9" y1="14" x2="15" y2="14"/>
+        </svg>
+        <div class="dz-title" data-localize="view_dz_title">Drop ZIP file here or click to select</div>
+        <div class="dz-sub" data-localize="view_dz_sub">Choose archive file from your computer</div>
+        <input id="inp-zip" type="file" accept=".zip,.rar,.7z,.tar,.tar.gz,.tgz" hidden />
       </div>
+
       <div class="row">
-        <button type="button" id="btn-extract-all" class="secondary">Extract all</button>
-        <button type="button" id="btn-reopen-zip" class="primary" style="display:none">Reopen ZIP</button>
-        <button type="button" id="btn-clear-state" class="secondary">Clear</button>
+        <button type="button" id="btn-extract-all" class="secondary" data-localize="btn_extract_all">Download all</button>
+        <button type="button" id="btn-reopen-zip" class="primary" style="display:none" data-localize="btn_reopen">Reopen</button>
+        <button type="button" id="btn-clear-state" class="secondary" data-localize="btn_clear">Clear</button>
       </div>
+
       <div id="zip-meta" class="meta"></div>
       <div id="list-zip" class="list"></div>
     </section>
+
+    <!-- Rating Widget -->
+    <div class="rating-widget">
+      <hr class="rating-separator" />
+      <p class="rating-text">Rate us:</p>
+      <div class="full-stars">
+        <div class="rating-group">
+          <input name="rating" id="rating-1" value="1" type="radio" />
+          <label for="rating-1">
+            <a href="#" data-rating="1" class="rating-link">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                <path d="M259.3 17.8L194 150.2 47.9 171.5c-26.2 3.8-36.7 36.1-17.7 54.6l105.7 103-25 145.5c-4.5 26.3 23.2 46 46.4 33.7L288 439.6l130.7 68.7c23.2 12.2 50.9-7.4 46.4-33.7l-25-145.5 105.7-103c19-18.5 8.5-50.8-17.7-54.6L382 150.2 316.7 17.8c-11.7-23.6-45.6-23.9-57.4 0z" />
+              </svg>
+            </a>
+          </label>
+          <input name="rating" id="rating-2" value="2" type="radio" />
+          <label for="rating-2">
+            <a href="#" data-rating="2" class="rating-link">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                <path d="M259.3 17.8L194 150.2 47.9 171.5c-26.2 3.8-36.7 36.1-17.7 54.6l105.7 103-25 145.5c-4.5 26.3 23.2 46 46.4 33.7L288 439.6l130.7 68.7c23.2 12.2 50.9-7.4 46.4-33.7l-25-145.5 105.7-103c19-18.5 8.5-50.8-17.7-54.6L382 150.2 316.7 17.8c-11.7-23.6-45.6-23.9-57.4 0z" />
+              </svg>
+            </a>
+          </label>
+          <input name="rating" id="rating-3" value="3" type="radio" />
+          <label for="rating-3">
+            <a href="#" data-rating="3" class="rating-link">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                <path d="M259.3 17.8L194 150.2 47.9 171.5c-26.2 3.8-36.7 36.1-17.7 54.6l105.7 103-25 145.5c-4.5 26.3 23.2 46 46.4 33.7L288 439.6l130.7 68.7c23.2 12.2 50.9-7.4 46.4-33.7l-25-145.5 105.7-103c19-18.5 8.5-50.8-17.7-54.6L382 150.2 316.7 17.8c-11.7-23.6-45.6-23.9-57.4 0z" />
+              </svg>
+            </a>
+          </label>
+          <input name="rating" id="rating-4" value="4" type="radio" />
+          <label for="rating-4">
+            <a href="#" data-rating="4" class="rating-link">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                <path d="M259.3 17.8L194 150.2 47.9 171.5c-26.2 3.8-36.7 36.1-17.7 54.6l105.7 103-25 145.5c-4.5 26.3 23.2 46 46.4 33.7L288 439.6l130.7 68.7c23.2 12.2 50.9-7.4 46.4-33.7l-25-145.5 105.7-103c19-18.5 8.5-50.8-17.7-54.6L382 150.2 316.7 17.8c-11.7-23.6-45.6-23.9-57.4 0z" />
+              </svg>
+            </a>
+          </label>
+          <input name="rating" id="rating-5" value="5" type="radio" />
+          <label for="rating-5">
+            <a href="#" data-rating="5" class="rating-link">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                <path d="M259.3 17.8L194 150.2 47.9 171.5c-26.2 3.8-36.7 36.1-17.7 54.6l105.7 103-25 145.5c-4.5 26.3 23.2 46 46.4 33.7L288 439.6l130.7 68.7c23.2 12.2 50.9-7.4 46.4-33.7l-25-145.5 105.7-103c19-18.5 8.5-50.8-17.7-54.6L382 150.2 316.7 17.8c-11.7-23.6-45.6-23.9-57.4 0z" />
+              </svg>
+            </a>
+          </label>
+        </div>
+      </div>
+    </div>
   </main>
 
-  <!-- Подключаем библиотеки и скрипты -->
+  <!-- Libraries -->
   <script src="../libs/jszip.min.js"></script>
-  <script src="../app.js" type="module"></script>
+  <!-- ДОБАВИТЬ: libarchive.js, чтобы был доступен глобальный Archive -->
+  <script src="../libs/libarchive/libarchive.js"></script>
+
+  <!-- Ваш основной скрипт -->
+  <script src="../public/main.js" type="module"></script>
 </body>
 </html>

@@ -1,244 +1,532 @@
+/* ==================== ZIPboost Styles ==================== */
+
+/* ---------- CSS Variables (Dark Theme Default) ---------- */
 :root {
-  --bg: #0b0f14;
-  --panel: #111827;
-  --border: #1f2937;
-  --text: #e5e7eb;
-  --muted: #9ca3af;
-  --primary: #4f46e5;
-  --primary-2: #3b82f6;
-  /* Extended variables for theming */
-  --topbar-bg: #0d1420;
-  --tab-bg: #101826;
-  --tab-color: #c7d2fe;
-  --tab-active-bg: #142033;
-  --tab-active-color: #fff;
-  --tab-active-border: #334155;
-  --input-bg: #0f172a;
+  --bg: #16181c;
+  --panel: #1e2228;
+  --border: #2a2f38;
+  --text: #e8eaed;
+  --muted: #9aa0a9;
+  --primary: #6366f1;
+  --primary-hover: #818cf8;
+  --topbar-bg: #1a1d22;
+  --input-bg: #23272e;
+  --input-color: #fff;
+  --dropzone-bg: #1a1d22;
+  --dropzone-drag-bg: #252a33;
+  --item-hover-bg: #282d36;
+  --item-active-bg: #323844;
+  --button-secondary-bg: #2a2f38;
+  --button-secondary-hover: #353b47;
   --progress-color: #10b981;
-  --dropzone-bg: #0f172a;
-  --dropzone-drag-bg: #0e1b2b;
-  --dropzone-focus-border: var(--primary-2);
-  --dropzone-drag-border: var(--primary-2);
-  --item-hover-bg: #1a273a;
-  --item-active-bg: #26354f;
-  --button-xs-bg: #374151;
-  --button-xs-hover-bg: #475569;
-  --button-text: #fff;
+  --danger: #ef4444;
+  --danger-hover: #f87171;
+  --shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
+
+/* ---------- Light Theme ---------- */
+body.light {
+  --bg: #f8f9fa;
+  --panel: #ffffff;
+  --border: #e2e5e9;
+  --text: #1a1d22;
+  --muted: #6b7280;
+  --primary: #4f46e5;
+  --primary-hover: #6366f1;
+  --topbar-bg: #ffffff;
+  --input-bg: #f3f4f6;
+  --input-color: #1a1d22;
+  --dropzone-bg: #f9fafb;
+  --dropzone-drag-bg: #f0f1f3;
+  --item-hover-bg: #f3f4f6;
+  --item-active-bg: #e5e7eb;
+  --button-secondary-bg: #e5e7eb;
+  --button-secondary-hover: #d1d5db;
+  --progress-color: #059669;
+  --danger: #dc2626;
+  --danger-hover: #ef4444;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* ---------- Base Reset ---------- */
 * { box-sizing: border-box; }
+
 html, body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial, sans-serif;
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  width: 380px;
+  min-height: 560px;
 }
 
-/* Top bar */
+/* ---------- Top Bar ---------- */
 .topbar {
   position: sticky;
   top: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
   background: var(--topbar-bg);
-}
-.tabs {
-  display: flex;
-  gap: 8px;
-  flex: 1;
-  justify-content: center;
-}
-.tab {
-  background: var(--tab-bg);
-  border: 1px solid var(--border);
-  color: var(--tab-color);
-  padding: 8px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-.tab.active {
-  background: var(--tab-active-bg);
-  color: var(--tab-active-color);
-  border-color: var(--tab-active-border);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
 }
 
-/* Layout */
-.container {
-  min-width: 320px;
-  max-width: 400px;
-  padding: 12px;
+/* ---------- Tabs (Minimal Underline Style) ---------- */
+.tabs {
+  display: flex;
+  gap: 4px;
 }
+
+.tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--primary);
+  font-weight: 600;
+}
+
+/* ---------- Theme Toggle ---------- */
+.theme-toggle {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.theme-toggle:hover {
+  background: var(--button-secondary-bg);
+}
+
+/* ---------- Layout ---------- */
+.container {
+  padding: 16px;
+  max-width: 400px;
+}
+
 .card {
   display: none;
   flex-direction: column;
   gap: 16px;
   background: var(--panel);
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.card.active { display: flex; }
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
-  margin: 8px 0;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
 }
 
-.field-group { margin: 12px 0; }
-.field-group select {
-  width: 100%;
-  margin-bottom: 4px;
+.card.active {
+  display: flex;
 }
-.field-label {
-  display: block;
+
+.card h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* ---------- Dropzone ---------- */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 130px;
+  padding: 24px 16px;
+  background: var(--dropzone-bg);
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+}
+
+.dropzone:hover,
+.dropzone:focus {
+  border-color: var(--primary);
+}
+
+.dropzone.drag {
+  border-color: var(--primary);
+  background: var(--dropzone-drag-bg);
+}
+
+.dz-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--muted);
+  transition: color 0.2s;
+}
+
+.dropzone:hover .dz-icon {
+  color: var(--primary);
+}
+
+.dz-title {
   font-size: 14px;
   font-weight: 500;
   color: var(--text);
-  margin-bottom: 6px;
-}
-.label { flex: 0 0 80px; }
-input[type=text], select {
-  flex: 1;
-  padding: 6px 8px;
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--button-text);
-}
-select { cursor: pointer; }
-.hint {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 4px;
-}
-.meta {
-  font-size: 12px;
-  color: var(--muted);
-}
-.progress {
-  font-size: 13px;
-  color: var(--progress-color);
-  margin-left: 8px;
 }
 
-/* Dropzone */
-.dropzone {
-  text-align: center;
-  padding: 20px;
-  border: 2px dashed var(--border);
-  border-radius: 8px;
-  background: var(--dropzone-bg);
-  cursor: pointer;
-  outline: none;
-}
-.dropzone:focus {
-  border-color: var(--dropzone-focus-border);
-}
-.dropzone.drag {
-  border-color: var(--dropzone-drag-border);
-  background: var(--dropzone-drag-bg);
-}
-.dz-title {
-  font-size: 15px;
-  margin-bottom: 4px;
-}
 .dz-sub {
   font-size: 13px;
   color: var(--muted);
 }
 
-/* File list */
+/* ---------- File List ---------- */
 .list {
-  max-height: 150px;
+  max-height: 160px;
   overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
+  background: var(--dropzone-bg);
 }
+
+.list:empty {
+  display: none;
+}
+
 .item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 8px;
+  gap: 8px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
 }
-.item:last-child { border: none; }
-.name {
-  flex: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+
+.item:last-child {
+  border-bottom: none;
 }
-.meta {
-  flex: 0 0 auto;
-  margin-left: 8px;
-}
+
 .item.file:hover {
   background: var(--item-hover-bg);
 }
+
 .item.file:active {
   background: var(--item-active-bg);
 }
-.item button.xs {
-  background: var(--button-xs-bg);
-  border: none;
-  color: var(--button-text);
-  font-size: 14px;
-  padding: 4px 8px;
-  cursor: pointer;
-  border-radius: 3px;
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
 }
-.item button.xs:hover {
-  background: var(--button-xs-hover-bg);
+
+.meta {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--muted);
 }
+
 .file-actions {
   display: flex;
-  gap: 4px;
-  margin-left: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-/* Buttons */
-button.primary, button.secondary {
-  cursor: pointer;
-  padding: 8px 16px;
-  border: none;
-  color: var(--button-text);
-  border-radius: 4px;
+/* ---------- Buttons ---------- */
+button {
+  font-family: inherit;
+  font-size: 14px;
 }
-button.primary { background: var(--primary); }
+
+button.primary,
 button.secondary {
-  background: var(--panel);
-  border: 1px solid var(--border);
-}
-button.primary:hover, button.secondary:hover {
-  opacity: 0.9;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+  border: none;
 }
 
-/* Theme toggle */
-.theme-toggle {
-  background: var(--tab-bg);
+button.primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+button.primary:hover {
+  background: var(--primary-hover);
+}
+
+button.secondary {
+  background: var(--button-secondary-bg);
+  color: var(--text);
   border: 1px solid var(--border);
-  color: var(--tab-color);
-  padding: 6px 10px;
-  border-radius: 8px;
+}
+
+button.secondary:hover {
+  background: var(--button-secondary-hover);
+}
+
+/* Small buttons (file actions) */
+button.xs {
+  min-height: 30px;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+  background: var(--button-secondary-bg);
+  color: var(--text);
+  border: none;
   cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
+  transition: background 0.2s;
+}
+
+button.xs:hover {
+  background: var(--button-secondary-hover);
+}
+
+/* Remove button (×) */
+.item-remove {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  height: 36px;
-  transition: all 0.2s ease;
 }
-.theme-toggle:hover {
-  background: var(--tab-active-bg);
-  border-color: var(--tab-active-border);
-  opacity: 0.9;
+
+/* Clear/destructive button */
+button.danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
 }
-.theme-icon {
+
+button.danger:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* ---------- Form Elements ---------- */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.field-group {
+  margin: 4px 0;
+}
+
+.field-label,
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--input-color);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus,
+select:focus {
+  border-color: var(--primary);
+}
+
+select {
+  cursor: pointer;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* ---------- Progress ---------- */
+.progress {
+  font-size: 13px;
+  color: var(--progress-color);
+  font-weight: 500;
+}
+
+/* ---------- Actions Row ---------- */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Reopen Message ---------- */
+.reopen-message {
+  padding: 12px;
+  background: var(--dropzone-bg);
+  border-radius: 8px;
+  border-left: 3px solid var(--primary);
+  margin-bottom: 8px;
+}
+
+.reopen-item {
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+/* ---------- Environment Warnings ---------- */
+.env-warnings {
+  margin: 12px 16px 0;
+  padding: 12px;
+  border: 1px solid #fca5a5;
+  background: var(--panel);
+  color: #fecaca;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+body.light .env-warnings {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.env-warnings h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.env-warnings ul {
+  margin: 6px 0 0 18px;
+  padding: 0;
+}
+
+.env-warnings a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+/* ---------- Focus States ---------- */
+button:focus-visible,
+.tab:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ---------- Scrollbar (Webkit) ---------- */
+.list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.list::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* ---------- Rating Widget ---------- */
+.rating-widget {
+  margin-top: 8px;
+  padding: 6px 0;
+}
+
+.rating-separator {
+  border: 0;
+  border-top: 3px solid var(--border);
+  opacity: 0.25;
+  margin: 0 0 6px 0;
+}
+
+.rating-text {
+  text-align: center;
+  font-family: arial, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  margin: 0 0 4px 0;
+}
+
+.full-stars {
+  text-align: center;
+}
+
+.full-stars .rating-group {
+  display: inline-flex;
+}
+
+.full-stars input {
+  position: absolute;
+  left: -9999px;
+}
+
+.full-stars label {
+  margin: 0;
+  cursor: pointer;
+}
+
+.full-stars label a {
   display: inline-block;
+  text-decoration: none;
+}
+
+.full-stars label a svg {
+  margin: 1px;
+  height: 22px;
+  width: 22px;
+  fill: #9ca3af;
+  transition: fill 0.3s;
+}
+
+.full-stars label a.active svg {
+  fill: #ffd700;
+}
+
+body.light .full-stars label a svg {
+  fill: #9ca3af;
+}
+
+body.light .full-stars label a.active svg {
+  fill: #ffd700;
 }
