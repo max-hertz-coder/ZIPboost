@@ -15,6 +15,20 @@ const fmt = (bytes) =>
 
 const sanitizeName = (s) => (s || "archive.zip").replace(/[\/\\:*?"<>|]/g, "_");
 
+// Проверка, является ли файл служебным/системным (не нужно извлекать)
+const isSystemFile = (name) => {
+  const n = name.toLowerCase();
+  // macOS метаданные и служебные файлы
+  if (n.startsWith("__macosx/") || n.includes("/__macosx/")) return true;
+  if (n.startsWith("._")) return true;
+  // Windows
+  if (n === "thumbs.db" || n.endsWith("/thumbs.db")) return true;
+  if (n === "desktop.ini" || n.endsWith("/desktop.ini")) return true;
+  // Скрытые файлы (опционально - можно закомментировать если нужны)
+  if (n.startsWith(".ds_store") || n.endsWith("/.ds_store")) return true;
+  return false;
+};
+
 const extMime = (name) => {
   const ext = (name.split(".").pop() || "").toLowerCase();
   const m = {
@@ -380,7 +394,11 @@ setInterval(() => { if (secC.classList.contains("active")) persistCompressState(
 //                               VIEW TAB
 // ============================================================================
 function renderZipEntries(entries) {
-  listV.innerHTML = entries.map(path => {
+  // Фильтруем служебные файлы перед отображением
+  const filteredEntries = entries.filter(path => !isSystemFile(path));
+  const skippedCount = entries.length - filteredEntries.length;
+
+  listV.innerHTML = filteredEntries.map(path => {
     const entry = currentZip.files[path];
     const label = entry.dir ? `[Folder] ${path}` : path;
     let right = "";
@@ -407,6 +425,11 @@ function renderZipEntries(entries) {
       ${buttons}
     </div>`;
   }).join("");
+
+  // Показываем информацию о пропущенных служебных файлах
+  if (skippedCount > 0) {
+    console.log(`Filtered out ${skippedCount} system files from view`);
+  }
 
   // bind open/download
   $$(".file-open", listV).forEach(btn => {
@@ -597,7 +620,17 @@ async function openZip(file) {
 
     const entries = Object.keys(currentZip.files).sort();
     renderZipEntries(entries);
-    metaV.textContent = `${entries.length} entries in ${file.name}`;
+
+    // Подсчитываем реальные файлы (без служебных)
+    const realFiles = entries.filter(path => !isSystemFile(path) && !currentZip.files[path].dir);
+    const totalEntries = entries.length;
+    const systemFiles = entries.filter(path => isSystemFile(path)).length;
+
+    const metaText = systemFiles > 0
+      ? `${realFiles.length} files (${systemFiles} system files hidden) in ${file.name}`
+      : `${realFiles.length} files in ${file.name}`;
+    metaV.textContent = metaText;
+
     btnReopen.style.display = "none";
     btnExtract.style.display = "inline-block";
 
@@ -622,9 +655,18 @@ on(btnExtract, "click", async (e) => {
   if (!currentZip) return alert("Open a ZIP first.");
   const base = currentZipName.replace(/\.zip$/i, "");
   let count = 0;
+  let skipped = 0;
 
   for (const [name, entry] of Object.entries(currentZip.files)) {
     if (entry.dir) continue;
+
+    // Пропускаем служебные файлы macOS и Windows
+    if (isSystemFile(name)) {
+      skipped++;
+      console.log("Skipping system file:", name);
+      continue;
+    }
+
     try {
       const ab = await entry.async("arraybuffer");
       // Всегда используем application/octet-stream для бинарных файлов
@@ -656,7 +698,11 @@ on(btnExtract, "click", async (e) => {
       console.warn("Extract failed:", name, err);
     }
   }
-  metaV.textContent = `Extracted ${count} file(s) to Downloads/${base}/`;
+
+  const msg = skipped > 0
+    ? `Extracted ${count} file(s) to Downloads/${base}/ (skipped ${skipped} system files)`
+    : `Extracted ${count} file(s) to Downloads/${base}/`;
+  metaV.textContent = msg;
 });
 
 // Reopen
