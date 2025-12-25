@@ -20,7 +20,8 @@ const extMime = (name) => {
   const m = {
     // images
     png:"image/png", jpg:"image/jpeg", jpeg:"image/jpeg", gif:"image/gif",
-    webp:"image/webp", svg:"image/svg+xml", bmp:"image/bmp", ico:"image/x-icon", tiff:"image/tiff",
+    webp:"image/webp", svg:"image/svg+xml", bmp:"image/bmp", ico:"image/x-icon",
+    tiff:"image/tiff", tif:"image/tiff", heic:"image/heic", heif:"image/heif",
     // docs
     pdf:"application/pdf", doc:"application/msword",
     docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -28,21 +29,50 @@ const extMime = (name) => {
     xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ppt:"application/vnd.ms-powerpoint",
     pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    odt:"application/vnd.oasis.opendocument.text",
+    ods:"application/vnd.oasis.opendocument.spreadsheet",
+    odp:"application/vnd.oasis.opendocument.presentation",
     // text/code
     txt:"text/plain", md:"text/markdown", rtf:"application/rtf",
     html:"text/html", htm:"text/html", xml:"text/xml",
-    css:"text/css", js:"text/javascript", json:"application/json",
-    csv:"text/csv", log:"text/plain", ini:"text/plain",
+    css:"text/css", js:"text/javascript", mjs:"text/javascript",
+    json:"application/json", csv:"text/csv", tsv:"text/tab-separated-values",
+    log:"text/plain", ini:"text/plain", cfg:"text/plain", conf:"text/plain",
+    // programming languages
+    ts:"text/typescript", tsx:"text/typescript", jsx:"text/javascript",
+    py:"text/x-python", rb:"text/x-ruby", java:"text/x-java",
+    c:"text/x-c", cpp:"text/x-c++", cc:"text/x-c++", cxx:"text/x-c++",
+    h:"text/x-c", hpp:"text/x-c++", cs:"text/x-csharp",
+    php:"text/x-php", go:"text/x-go", rs:"text/x-rust",
+    swift:"text/x-swift", kt:"text/x-kotlin", scala:"text/x-scala",
+    sql:"text/x-sql", pl:"text/x-perl", sh:"text/x-shellscript",
+    bash:"text/x-shellscript", zsh:"text/x-shellscript",
+    ps1:"text/plain", bat:"text/plain", cmd:"text/plain",
+    // config/data formats
+    yaml:"text/yaml", yml:"text/yaml", toml:"text/toml",
     // archives
     zip:"application/zip", rar:"application/x-rar-compressed",
     "7z":"application/x-7z-compressed", tar:"application/x-tar",
-    gz:"application/gzip", bz2:"application/x-bzip2",
-    // av
-    mp3:"audio/mpeg", wav:"audio/wav", mp4:"video/mp4", avi:"video/x-msvideo",
-    mov:"video/quicktime", wmv:"video/x-ms-wmv",
-    // other
+    gz:"application/gzip", gzip:"application/gzip", bz2:"application/x-bzip2",
+    xz:"application/x-xz", tgz:"application/x-tar", tbz2:"application/x-tar",
+    // audio
+    mp3:"audio/mpeg", wav:"audio/wav", ogg:"audio/ogg", m4a:"audio/mp4",
+    flac:"audio/flac", aac:"audio/aac", wma:"audio/x-ms-wma",
+    opus:"audio/opus", webm:"audio/webm",
+    // video
+    mp4:"video/mp4", avi:"video/x-msvideo", mov:"video/quicktime",
+    wmv:"video/x-ms-wmv", flv:"video/x-flv", mkv:"video/x-matroska",
+    webm:"video/webm", m4v:"video/x-m4v", mpg:"video/mpeg", mpeg:"video/mpeg",
+    "3gp":"video/3gpp", ogv:"video/ogg",
+    // fonts
+    ttf:"font/ttf", otf:"font/otf", woff:"font/woff", woff2:"font/woff2",
+    eot:"application/vnd.ms-fontobject",
+    // other common types
     exe:"application/x-msdownload", dll:"application/x-msdownload",
-    bat:"text/plain", sh:"text/plain", ps1:"text/plain"
+    msi:"application/x-msi", dmg:"application/x-apple-diskimage",
+    apk:"application/vnd.android.package-archive",
+    iso:"application/x-iso9660-image",
+    torrent:"application/x-bittorrent"
   };
   return m[ext] || "application/octet-stream";
 };
@@ -459,16 +489,19 @@ function renderZipEntries(entries) {
       if (!entry) return;
       try {
         const ab = await entry.async("arraybuffer");
-        const blob = new Blob([ab], { type: extMime(path) });
+        const mime = extMime(path);
+        const blob = new Blob([ab], { type: mime });
         const url = URL.createObjectURL(blob);
         // Очищаем путь от слешей в начале и нормализуем
         const safePath = path.replace(/^\/+/, "").replace(/\\/g, "/");
+        // Убеждаемся что имя файла сохраняет оригинальное расширение
+        const filename = safePath.includes('/') ? safePath : sanitizeName(safePath);
         chrome.downloads.download(
-          { 
-            url, 
-            filename: safePath, 
-            conflictAction: "uniquify", 
-            saveAs: false 
+          {
+            url,
+            filename: filename,
+            conflictAction: "uniquify",
+            saveAs: false
           },
           (downloadId) => {
             setTimeout(() => URL.revokeObjectURL(url), 3000);
@@ -593,12 +626,24 @@ on(btnExtract, "click", async (e) => {
     if (entry.dir) continue;
     try {
       const ab = await entry.async("arraybuffer");
-      const blob = new Blob([ab], { type: extMime(name) });
+      const mime = extMime(name);
+      const blob = new Blob([ab], { type: mime });
       const url = URL.createObjectURL(blob);
-      const safePath = name.split("\\").join("/");
+      // Нормализуем путь и очищаем от слешей в начале
+      const safePath = name.replace(/^\/+/, "").split("\\").join("/");
       chrome.downloads.download(
-        { url, filename: `${base}/${safePath}`, conflictAction: "uniquify", saveAs: false },
-        () => setTimeout(() => URL.revokeObjectURL(url), 3000)
+        {
+          url,
+          filename: `${base}/${safePath}`,
+          conflictAction: "uniquify",
+          saveAs: false
+        },
+        (downloadId) => {
+          setTimeout(() => URL.revokeObjectURL(url), 3000);
+          if (chrome.runtime.lastError) {
+            console.warn("Extract failed:", name, chrome.runtime.lastError.message);
+          }
+        }
       );
       count++;
     } catch (err) {
