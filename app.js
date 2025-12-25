@@ -20,7 +20,8 @@ const isSystemFile = (name) => {
   const n = name.toLowerCase();
   // macOS метаданные и служебные файлы
   if (n.startsWith("__macosx/") || n.includes("/__macosx/")) return true;
-  if (n.startsWith("._")) return true;
+  // Проверяем файлы ._ в любой части пути
+  if (n.startsWith("._") || n.includes("/._")) return true;
   // Windows
   if (n === "thumbs.db" || n.endsWith("/thumbs.db")) return true;
   if (n === "desktop.ini" || n.endsWith("/desktop.ini")) return true;
