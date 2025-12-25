@@ -490,16 +490,17 @@ function renderZipEntries(entries) {
       try {
         const ab = await entry.async("arraybuffer");
         const mime = extMime(path);
-        const blob = new Blob([ab], { type: mime });
+        // Для бинарных файлов используем application/octet-stream чтобы Chrome не переопределял тип
+        const safeMime = mime.startsWith("text/") || mime === "application/json" ? mime : "application/octet-stream";
+        const blob = new Blob([ab], { type: safeMime });
         const url = URL.createObjectURL(blob);
         // Очищаем путь от слешей в начале и нормализуем
         const safePath = path.replace(/^\/+/, "").replace(/\\/g, "/");
-        // Убеждаемся что имя файла сохраняет оригинальное расширение
-        const filename = safePath.includes('/') ? safePath : sanitizeName(safePath);
+
         chrome.downloads.download(
           {
             url,
-            filename: filename,
+            filename: safePath,
             conflictAction: "uniquify",
             saveAs: false
           },
@@ -626,15 +627,20 @@ on(btnExtract, "click", async (e) => {
     if (entry.dir) continue;
     try {
       const ab = await entry.async("arraybuffer");
-      const mime = extMime(name);
-      const blob = new Blob([ab], { type: mime });
+      // Всегда используем application/octet-stream для бинарных файлов
+      // Это предотвращает попытки Chrome определить тип по содержимому
+      const blob = new Blob([ab], { type: "application/octet-stream" });
       const url = URL.createObjectURL(blob);
       // Нормализуем путь и очищаем от слешей в начале
       const safePath = name.replace(/^\/+/, "").split("\\").join("/");
+
+      // ВАЖНО: Используем оригинальное имя файла без изменений для сохранения расширения
+      const downloadPath = `${base}/${safePath}`;
+
       chrome.downloads.download(
         {
           url,
-          filename: `${base}/${safePath}`,
+          filename: downloadPath,
           conflictAction: "uniquify",
           saveAs: false
         },
