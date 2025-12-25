@@ -7,12 +7,24 @@
 
   <!-- Styles -->
   <link rel="stylesheet" href="../public/style.css">
+
+  <!-- Localize.camp (авто-детект языка браузера, 30+ языков) -->
+  <script src="https://global.localizecdn.com/localize.js"></script>
+  <script>
+    try {
+      Localize.initialize({
+        key: 'rehKq6Y5KctfYobc0ZDkww==',
+        // Авто-детект и запоминание
+        rememberLanguage: true
+      });
+    } catch(e) { console.warn('Localize init failed:', e); }
+  </script>
 </head>
 <body>
   <header class="topbar">
     <nav class="tabs">
-      <button type="button" id="tab-compress" class="tab active">Compress</button>
-      <button type="button" id="tab-view" class="tab">Uncompress</button>
+      <button type="button" id="tab-compress" class="tab active" data-localize="tab_compress">Compress</button>
+      <button type="button" id="tab-view" class="tab" data-localize="tab_view">View</button>
     </nav>
 
     <!-- Переключатель темы -->
@@ -27,45 +39,62 @@
   <main class="container">
     <!-- COMPRESS -->
     <section id="sec-compress" class="card active">
-      <h2>Compress files</h2>
+      <h2 data-localize="compress_title">Compress files</h2>
 
       <div id="dz-compress" class="dropzone" tabindex="0">
-        <div class="dz-title">Drop files here or click to select</div>
-        <div class="dz-sub">Choose files from your computer</div>
-        <!-- Скрытый input для выбора файлов -->
+        <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <div class="dz-title" data-localize="compress_dz_title">Drop files here or click to select</div>
+        <div class="dz-sub" data-localize="compress_dz_sub">Choose files from your computer</div>
         <input id="inp-compress" type="file" multiple hidden />
       </div>
 
       <div id="list-compress" class="list"></div>
 
       <div class="row">
-        <label class="label" for="zip-name">ZIP name</label>
+        <label class="label" for="zip-name" data-localize="zip_name">ZIP name</label>
         <input id="zip-name" type="text" value="archive.zip" />
       </div>
 
-      <!-- Compression level selector removed for simpler UX -->
+      <div class="field-group">
+        <label class="field-label" for="zip-preset" data-localize="compression_level">Compression level</label>
+        <select id="zip-preset" title="Preset affects speed and resulting ZIP size">
+          <option value="quick" data-localize="preset_quick">Quick — fastest (bigger)</option>
+          <option value="optimal" selected data-localize="preset_optimal">Optimal — balanced</option>
+          <option value="maximum" data-localize="preset_maximum">Maximum — smallest (slower)</option>
+        </select>
+        <div class="hint" data-localize="compression_hint">Compression level affects speed &amp; result size</div>
+      </div>
 
       <div class="actions">
-        <button type="button" id="btn-compress" class="primary">Create Zip File</button>
+        <button type="button" id="btn-compress" class="primary" data-localize="btn_compress">Create Zip File</button>
         <div id="progress" class="progress"></div>
+        <div id="lib-status" class="meta"></div>
       </div>
     </section>
 
-    <!-- UNCOMPRESS / EXTRACT -->
+    <!-- VIEW / EXTRACT -->
     <section id="sec-view" class="card">
-      <h2>Uncompress ZIP File</h2>
+      <h2 data-localize="view_title">View ZIP File</h2>
 
       <div id="dz-view" class="dropzone" tabindex="0">
-        <div class="dz-title">Drop ZIP file here or click to select</div>
-        <div class="dz-sub">Choose archive file from your computer</div>
-        <!-- Скрытый input для выбора архива -->
+        <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          <line x1="12" y1="11" x2="12" y2="17"/>
+          <line x1="9" y1="14" x2="15" y2="14"/>
+        </svg>
+        <div class="dz-title" data-localize="view_dz_title">Drop ZIP file here or click to select</div>
+        <div class="dz-sub" data-localize="view_dz_sub">Choose archive file from your computer</div>
         <input id="inp-zip" type="file" accept=".zip,.rar,.7z,.tar,.tar.gz,.tgz" hidden />
       </div>
 
       <div class="row">
-        <button type="button" id="btn-extract-all" class="secondary">Download all</button>
-        <button type="button" id="btn-reopen-zip" class="primary" style="display:none">Reopen</button>
-        <button type="button" id="btn-clear-state" class="secondary">Clear</button>
+        <button type="button" id="btn-extract-all" class="secondary" data-localize="btn_extract_all">Download all</button>
+        <button type="button" id="btn-reopen-zip" class="primary" style="display:none" data-localize="btn_reopen">Reopen</button>
+        <button type="button" id="btn-clear-state" class="secondary" data-localize="btn_clear">Clear</button>
       </div>
 
       <div id="zip-meta" class="meta"></div>
@@ -125,6 +154,7 @@
 
   <!-- Libraries -->
   <script src="../libs/jszip.min.js"></script>
+  <!-- ДОБАВИТЬ: libarchive.js, чтобы был доступен глобальный Archive -->
   <script src="../libs/libarchive/libarchive.js"></script>
 
   <!-- Ваш основной скрипт -->

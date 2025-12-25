@@ -20,6 +20,12 @@ let downloadQueue = [];
 const storageGet = (keys) => new Promise(r => chrome.storage?.local.get(keys, r));
 const storageSet = (obj) => new Promise(r => chrome.storage?.local.set(obj, r));
 
+// ---------- Filter macOS/Windows system files ----------
+function isSystemFile(path) {
+  const name = path.split('/').pop();
+  return path.startsWith('__MACOSX/') || path.includes('/__MACOSX/') || name.startsWith('._') || name === '.DS_Store' || name === 'Thumbs.db';
+}
+
 // ---------- Persist / Restore ----------
 async function saveState(statePatch = {}) {
   const cur = (await storageGet(['zipboost_state'])).zipboost_state || {};
@@ -490,7 +496,7 @@ function bindViewUI() {
       currentArchiveEntries = Object.keys(currentZipJS.files);
       downloadQueue = currentArchiveEntries.filter((name) => {
         const entry = currentZipJS.files[name];
-        return entry && !entry.dir;
+        return entry && !entry.dir && !isSystemFile(name);
       });
       renderDownloadQueue();
       updateMetaSummary();
@@ -506,7 +512,7 @@ function bindViewUI() {
       const archive = await archiveAPI.open(file);
       const filesObj = await archive.getFilesObject(); // map: name -> CompressedFile
       currentArchiveEntries = Object.keys(filesObj);
-      downloadQueue = currentArchiveEntries.filter((name) => !name.endsWith('/'));
+      downloadQueue = currentArchiveEntries.filter((name) => !name.endsWith('/') && !isSystemFile(name));
       renderDownloadQueue();
       updateMetaSummary();
       await saveState();
