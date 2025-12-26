@@ -465,17 +465,38 @@ on(btnZip, "click", async (e) => {
 
   await storageSet({ lastZipName: zipName.value });
 
-  const level = 6; // Optimal compression level
+  // Pre-compressed file extensions - use STORE (no compression) for these
+  const preCompressedExts = new Set([
+    'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'heic', 'heif',  // images
+    'mp4', 'mkv', 'avi', 'mov', 'webm', 'wmv', 'flv', 'm4v',      // video
+    'mp3', 'aac', 'ogg', 'flac', 'wma', 'm4a', 'opus',            // audio
+    'zip', 'rar', '7z', 'gz', 'bz2', 'xz', 'zst', 'lz4', 'tar.gz', 'tgz', // archives
+    'pdf', 'docx', 'xlsx', 'pptx',                                 // office (already compressed)
+    'woff', 'woff2',                                               // fonts
+  ]);
+
+  const getExt = (name) => (name.split('.').pop() || '').toLowerCase();
+  const isPreCompressed = (name) => preCompressedExts.has(getExt(name));
+
   const name  = sanitizeName(zipName.value || "archive.zip");
 
   btnZip.disabled = true;
   progC.textContent = "Packing…";
   try {
     const zip = new JSZip();
-    for (const f of files) zip.file(f.name, f);
+    // Add files with appropriate compression
+    for (const f of files) {
+      if (isPreCompressed(f.name)) {
+        // STORE = no compression for already-compressed files
+        zip.file(f.name, f, { compression: "STORE" });
+      } else {
+        // Level 1 = fastest DEFLATE compression
+        zip.file(f.name, f, { compression: "DEFLATE", compressionOptions: { level: 1 } });
+      }
+    }
 
     const blob = await zip.generateAsync(
-      { type: "blob", compression: "DEFLATE", compressionOptions: { level }, streamFiles: true },
+      { type: "blob", streamFiles: true },
       (m) => { if (m?.percent != null) progC.textContent = `Packing… ${Math.round(m.percent)}%`; }
     );
 

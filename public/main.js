@@ -426,7 +426,19 @@ function bindCompressUI() {
     if (!filesToCompress.length) {
       alert('No files selected.'); return;
     }
-    const level = 6; // balanced default compression
+
+    // Pre-compressed file extensions - use STORE (no compression) for these
+    const preCompressedExts = new Set([
+      'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'heic', 'heif',  // images
+      'mp4', 'mkv', 'avi', 'mov', 'webm', 'wmv', 'flv', 'm4v',      // video
+      'mp3', 'aac', 'ogg', 'flac', 'wma', 'm4a', 'opus',            // audio
+      'zip', 'rar', '7z', 'gz', 'bz2', 'xz', 'zst', 'lz4', 'tar.gz', 'tgz', // archives
+      'pdf', 'docx', 'xlsx', 'pptx',                                 // office (already compressed)
+      'woff', 'woff2',                                               // fonts
+    ]);
+    const getExt = (name) => (name.split('.').pop() || '').toLowerCase();
+    const isPreCompressed = (name) => preCompressedExts.has(getExt(name));
+
     const outName = (nameInput.value || 'archive.zip').replace(/[\/\\:*?"<>|]/g, '_');
 
     btn.disabled = true;
@@ -434,11 +446,19 @@ function bindCompressUI() {
 
     try {
       const zip = new JSZip();
-      filesToCompress.forEach(f => zip.file(f.name, f));
+      // Add files with appropriate compression
+      filesToCompress.forEach(f => {
+        if (isPreCompressed(f.name)) {
+          // STORE = no compression for already-compressed files
+          zip.file(f.name, f, { compression: "STORE" });
+        } else {
+          // Level 1 = fastest DEFLATE compression
+          zip.file(f.name, f, { compression: "DEFLATE", compressionOptions: { level: 1 } });
+        }
+      });
       const blob = await zip.generateAsync({
         type: 'blob',
-        compression: 'DEFLATE',
-        compressionOptions: { level }
+        streamFiles: true
       });
       const blobUrl = URL.createObjectURL(blob);
 
@@ -582,9 +602,17 @@ function bindViewUI() {
         <div class="name" title="${path}">${path}</div>
         <div class="meta">${getEntrySize(path)}</div>
         <div class="file-actions">
+          <button class="secondary xs file-download" data-path="${path}" title="Download">⬇</button>
           <button class="secondary xs file-remove" data-path="${path}" title="Remove">✕</button>
         </div>`;
       list.appendChild(row);
+    });
+
+    $$('.file-download', list).forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const path = btn.dataset.path;
+        await downloadSingleFile(path);
+      });
     });
 
     $$('.file-remove', list).forEach(btn => {
@@ -617,6 +645,39 @@ function bindViewUI() {
       if (entry.uncompressedSize) return fmt(entry.uncompressedSize);
     }
     return '';
+  }
+
+  async function downloadSingleFile(path) {
+    if (!currentArchiveFile) {
+      alert('Open an archive first.');
+      return;
+    }
+
+    if (isZipName(currentArchiveFile.name) && currentZipJS) {
+      const entry = currentZipJS.files[path];
+      if (!entry || entry.dir) return;
+      const ab = await entry.async('arraybuffer');
+      const mimeType = extMime(path);
+      const justName = path.split('/').pop().split('\\').pop();
+      const typedFile = new File([ab], justName, { type: mimeType });
+      const ok = await saveBlob(typedFile, path);
+      if (!ok) showWarning('blob');
+      return;
+    }
+
+    if (isSupportedByArchive(currentArchiveFile.name) && archiveAPI) {
+      const arch = await archiveAPI.open(currentArchiveFile);
+      const map = await arch.extractFiles();
+      const outFile = map[path];
+      if (!outFile) return;
+      const ab = await outFile.arrayBuffer();
+      const mimeType = extMime(path);
+      const justName = path.split('/').pop().split('\\').pop();
+      const typedFile = new File([ab], justName, { type: mimeType });
+      const ok = await saveBlob(typedFile, path);
+      if (!ok) showWarning('blob');
+      return;
+    }
   }
 
   async function extractAll(file) {
