@@ -180,7 +180,7 @@ function bindRatingWidget() {
   
   // Получаем ID расширения для формирования ссылки на CWS
   const extensionId = chrome.runtime.id;
-  const CWS_REVIEWS_URL = `https://chromewebstore.google.com/detail/${extensionId}/reviews`;
+  const CWS_REVIEWS_URL = `https://chromewebstore.google.com/detail/%D1%81%D0%BE%D0%B7%D0%B4%D0%B0%D1%82%D1%8C-zip-%D1%84%D0%B0%D0%B9%D0%BB/holbdgggpngcjloephdibcobkojceehj/reviews`;
   
   const ratingLinks = $$('.rating-link');
   const ratingGroup = $('.rating-group');
@@ -270,6 +270,40 @@ const fmt = (bytes) =>
   bytes < 1048576 ? `${(bytes/1024).toFixed(1)} KB` :
   bytes < 1073741824 ? `${(bytes/1048576).toFixed(1)} MB` :
   `${(bytes/1073741824).toFixed(1)} GB`;
+
+// Check if file extension is a text-based format that should NOT use octet-stream
+const isTextBasedExt = (ext) => {
+  const textExts = ['txt', 'md', 'rtf', 'html', 'htm', 'xml', 'css', 'js', 'json', 'csv', 'log',
+    'py', 'java', 'cpp', 'c', 'h', 'ts', 'tsx', 'jsx', 'sh', 'bat', 'yml', 'yaml', 'ini', 'cfg'];
+  return textExts.includes(ext.toLowerCase());
+};
+
+// Get MIME type from file extension
+// Uses application/octet-stream for binary files to prevent Chrome from changing extensions
+const extMime = (name) => {
+  const ext = (name.split(".").pop() || "").toLowerCase();
+
+  // For text-based files, return appropriate text MIME type
+  const textMimes = {
+    txt:"text/plain", md:"text/markdown", rtf:"application/rtf",
+    html:"text/html", htm:"text/html", xml:"text/xml",
+    css:"text/css", js:"text/javascript", json:"application/json",
+    csv:"text/csv", log:"text/plain",
+    py:"text/x-python", java:"text/x-java", cpp:"text/x-c++src", c:"text/x-csrc",
+    ts:"text/typescript", tsx:"text/tsx", jsx:"text/jsx",
+    sh:"application/x-sh", bat:"application/bat",
+    yml:"text/yaml", yaml:"text/yaml", ini:"text/plain", cfg:"text/plain"
+  };
+
+  if (textMimes[ext]) {
+    return textMimes[ext];
+  }
+
+  // For ALL binary files (PDF, images, documents, archives, etc.),
+  // use application/octet-stream to prevent Chrome from MIME-sniffing
+  // and changing the file extension
+  return "application/octet-stream";
+};
 
 function showWarning(kind, extra='') {
   const box = $('#env-warnings');
@@ -590,12 +624,18 @@ function bindViewUI() {
       alert('No files selected.'); return;
     }
     if (isZipName(file.name) && currentZipJS) {
-      // JSZip: iterate and save
+      // JSZip: iterate and save with correct MIME types
       for (const path of downloadQueue) {
         const entry = currentZipJS.files[path];
         if (!entry || entry.dir) continue;
-        const blob = await entry.async('blob');
-        const ok = await saveBlob(blob, path);
+        // Use arraybuffer to get raw binary data
+        const ab = await entry.async('arraybuffer');
+        const mimeType = extMime(path);
+        // Extract just the filename from the path
+        const justName = path.split('/').pop().split('\\').pop();
+        // Create a File object with explicit name and type (more reliable than Blob)
+        const typedFile = new File([ab], justName, { type: mimeType });
+        const ok = await saveBlob(typedFile, path);
         if (!ok) showWarning('multi');
       }
       return;
@@ -606,7 +646,12 @@ function bindViewUI() {
       for (const name of downloadQueue) {
         const outFile = map[name];
         if (!outFile) continue;
-        const ok = await saveBlob(outFile, name);
+        // Re-create file with correct MIME type to prevent extension changes
+        const ab = await outFile.arrayBuffer();
+        const mimeType = extMime(name);
+        const justName = name.split('/').pop().split('\\').pop();
+        const typedFile = new File([ab], justName, { type: mimeType });
+        const ok = await saveBlob(typedFile, name);
         if (!ok) showWarning('multi');
       }
       return;
@@ -618,18 +663,56 @@ function bindViewUI() {
 // ---------- Save helpers ----------
 async function saveBlob(blobOrFile, filename) {
   try {
-    const url = URL.createObjectURL(blobOrFile);
-    const resp = await chrome.runtime.sendMessage({
-      type: 'download',
-      payload: { url, filename }
+    // Extract just the filename (remove any path components)
+    const safeName = filename.split('/').pop().split('\\').pop();
+
+    // Debug: log file info
+    console.log('[ZIPboost] Downloading:', {
+      filename: safeName,
+      blobType: blobOrFile.type,
+      blobSize: blobOrFile.size,
+      blobName: blobOrFile.name || 'N/A'
     });
-    if (!resp?.ok) {
-      // fallback
-      const a = document.createElement('a'); a.href = url; a.download = filename;
-      document.body.appendChild(a); a.click(); a.remove();
-      if (chrome.runtime.lastError || !resp) showWarning('blob');
+
+    // Convert blob to ArrayBuffer and send to background script
+    // This ensures the data is accessible from the service worker
+    const arrayBuffer = await blobOrFile.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+
+    try {
+      const resp = await chrome.runtime.sendMessage({
+        type: 'downloadBlob',
+        payload: {
+          data: Array.from(uint8Array),
+          filename: safeName,
+          mimeType: blobOrFile.type || 'application/octet-stream'
+        }
+      });
+      if (!resp?.ok) {
+        // Fallback to anchor download
+        console.warn('[ZIPboost] Background download failed, using anchor fallback');
+        const url = URL.createObjectURL(blobOrFile);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = safeName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(()=>URL.revokeObjectURL(url), 8000);
+      }
+    } catch (downloadError) {
+      console.error('[ZIPboost] Download error:', downloadError);
+      // Last resort: direct anchor download
+      const url = URL.createObjectURL(blobOrFile);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = safeName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 8000);
     }
-    setTimeout(()=>URL.revokeObjectURL(url), 8000);
     return true;
   } catch (e) {
     console.warn('saveBlob failed', e);

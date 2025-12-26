@@ -138,7 +138,6 @@ const dzC   = $("#dz-compress");
 const inC   = $("#inp-compress");
 const listC = $("#list-compress");
 const zipName = $("#zip-name");
-const preset  = $("#zip-preset");
 const btnZip  = $("#btn-compress");
 const progC   = $("#progress");
 
@@ -310,9 +309,8 @@ on(tabV, "click", () => activate(secV, tabV));
 
 // Восстановление «умолчаний»
 (async () => {
-  const { lastZipName, lastPreset } = await storageGet(["lastZipName", "lastPreset"]);
+  const { lastZipName } = await storageGet(["lastZipName"]);
   zipName.value = lastZipName && !/\.tar$/i.test(lastZipName) ? lastZipName : "archive.zip";
-  preset.value = lastPreset || "optimal";
 })();
 
 // Восстановление состояния обеих вкладок + автозапуск выбора в режиме Full View
@@ -361,7 +359,6 @@ on(tabV, "click", () => activate(secV, tabV));
       renderCompressList();
     }
     if (state?.zipName) zipName.value = state.zipName;
-    if (state?.preset)  preset.value  = state.preset;
   }
 })();
 
@@ -405,7 +402,6 @@ async function persistCompressState() {
   await saveStateFull({
     activeTab: "compress",
     zipName: zipName.value,
-    preset: preset.value,
     compressFiles: pack
   });
 }
@@ -467,9 +463,9 @@ on(btnZip, "click", async (e) => {
   if (!JSZIP_OK) return alert("JSZip is not loaded.");
   if (!files.length) return alert("Add files first.");
 
-  await storageSet({ lastZipName: zipName.value, lastPreset: preset.value });
+  await storageSet({ lastZipName: zipName.value });
 
-  const level = preset.value === "quick" ? 1 : (preset.value === "maximum" ? 9 : 6);
+  const level = 6; // Optimal compression level
   const name  = sanitizeName(zipName.value || "archive.zip");
 
   btnZip.disabled = true;
@@ -573,8 +569,8 @@ function renderZipEntries(entries) {
           return;
         }
 
-        const blob = new Blob([ab], { type: mime });
-        const url = URL.createObjectURL(blob);
+        const typedBlob = new Blob([ab], { type: mime });
+        const url = URL.createObjectURL(typedBlob);
         // Ensure proper filename formatting and preserve extension
         let safePath = path.replace(/^\/+/, "").replace(/\\/g, "/");
         chrome.downloads.download(
@@ -597,9 +593,12 @@ function renderZipEntries(entries) {
       const entry = currentZip.file(path);
       if (!entry) return;
       try {
+        // Get the proper MIME type for this file
+        const mimeType = extMime(path);
+        // Use arraybuffer to get raw binary data, then create blob with correct MIME type
         const ab = await entry.async("arraybuffer");
-        const blob = new Blob([ab], { type: extMime(path) });
-        const url = URL.createObjectURL(blob);
+        const typedBlob = new Blob([ab], { type: mimeType });
+        const url = URL.createObjectURL(typedBlob);
         const safePath = path.replace(/^\/+/, "").replace(/\\/g, "/");
         chrome.downloads.download(
           { url, filename: safePath, conflictAction: "uniquify", saveAs: false },
@@ -716,24 +715,15 @@ on(btnExtract, "click", async (e) => {
     if (entry.dir) continue;
     if (isMacOSMetadata(name)) continue; // Skip macOS metadata files
     try {
-      const ab = await entry.async("arraybuffer");
+      // Get the proper MIME type for this file
       const mimeType = extMime(name);
-      const blob = new Blob([ab], { type: mimeType });
-      const url = URL.createObjectURL(blob);
+      // Use arraybuffer to get raw binary data, then create blob with correct MIME type
+      const ab = await entry.async("arraybuffer");
+      const typedBlob = new Blob([ab], { type: mimeType });
+      const url = URL.createObjectURL(typedBlob);
 
-      // Ensure proper file path formatting and preserve extension
-      let safePath = name.replace(/\\/g, "/").replace(/^\/+/, "");
-
-      // Make sure the filename has an extension
-      if (!safePath.includes(".") || safePath.lastIndexOf(".") < safePath.lastIndexOf("/")) {
-        // No extension or extension is in directory name, not filename
-        // Try to infer from MIME type
-        const ext = Object.entries({
-          "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif",
-          "application/pdf": "pdf", "text/plain": "txt"
-        }).find(([mime]) => mime === mimeType)?.[1];
-        if (ext) safePath += `.${ext}`;
-      }
+      // Preserve original file path and extension
+      const safePath = name.replace(/\\/g, "/").replace(/^\/+/, "");
 
       chrome.downloads.download(
         { url, filename: `${base}/${safePath}`, conflictAction: "uniquify", saveAs: false },

@@ -24,13 +24,44 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // Инициировать загрузку файла по URL (data:, blob:, https:)
   if (msg.type === 'download') {
     const { url, filename } = msg.payload || {};
+    console.log('[ZIPboost BG] Download request:', { filename, urlType: url?.substring(0, 20) });
+
     chrome.downloads.download(
       { url, filename, conflictAction: 'uniquify', saveAs: false },
       (id) => {
         const lastError = chrome.runtime.lastError?.message;
+        console.log('[ZIPboost BG] Download result:', { id, lastError, filename });
         sendResponse({ ok: !!id, id, lastError });
       }
     );
+    return true; // async response
+  }
+
+  // Download from blob data passed directly (more reliable than blob URLs)
+  if (msg.type === 'downloadBlob') {
+    const { data, filename, mimeType } = msg.payload || {};
+    console.log('[ZIPboost BG] DownloadBlob request:', { filename, mimeType, dataLength: data?.length });
+
+    try {
+      // Reconstruct the blob in the service worker context
+      const uint8Array = new Uint8Array(data);
+      const blob = new Blob([uint8Array], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+
+      chrome.downloads.download(
+        { url, filename, conflictAction: 'uniquify', saveAs: false },
+        (id) => {
+          const lastError = chrome.runtime.lastError?.message;
+          console.log('[ZIPboost BG] DownloadBlob result:', { id, lastError, filename });
+          // Clean up the blob URL after a delay
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+          sendResponse({ ok: !!id, id, lastError });
+        }
+      );
+    } catch (e) {
+      console.error('[ZIPboost BG] DownloadBlob error:', e);
+      sendResponse({ ok: false, error: String(e) });
+    }
     return true; // async response
   }
 
